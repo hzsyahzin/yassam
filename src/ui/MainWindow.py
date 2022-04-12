@@ -47,7 +47,7 @@ class Ui_MainWindow(object):
         self.menuEdit = QtWidgets.QMenu(self.menubar)
         self.menuEdit.setObjectName("menuEdit")
         MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(MainWindow)
+        self.statusbar = StatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
         self.actionLoad = QtGui.QAction(MainWindow)
@@ -143,3 +143,4 @@ class Ui_MainWindow(object):
         self.actionNew_Folder.setShortcut(_translate("MainWindow", "Ctrl+Shift+N"))
         self.actionSettings.setText(_translate("MainWindow", "Settings"))
 from filetreeview import FileTreeView
+from statusbar import StatusBar

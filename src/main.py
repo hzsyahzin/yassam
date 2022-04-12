@@ -15,13 +15,10 @@ To implement:
 """
 
 import sys
-import os
-import shutil
 from pathlib import Path, PurePath
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QInputDialog, QMessageBox
-from PyQt6.QtGui import QFileSystemModel
-from PyQt6.QtCore import Qt, QDir
+from PyQt6.QtWidgets import QApplication, QMainWindow, QInputDialog
+from PyQt6.QtCore import QDir
 
 from ui.MainWindow import Ui_MainWindow
 
@@ -32,54 +29,35 @@ savefileName = "DRAKS0005.sl2"
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.treeModel = QFileSystemModel()
-
         self.rootPath = rootPath / "Documents/NBGI/DarkSouls"
+        self.activePath = self.rootPath
         self.treeViewPath = PurePath(rootPath)
 
         self.setupUi(self)
-
-        self.initTreeView()
-        self.initConnections()
+        self.treeView.parent = self
 
         self.updateComboBox()
+        self.updateMenu()
+        self.initConnections()
 
     def getCurrentProfile(self):
         return self.comboBoxProfile.currentText()
 
+    def getSavefileLocation(self):
+        return self.rootPath / savefileName
+
     def initConnections(self):
-
-        self.treeView.customContextMenuRequested.connect(self.onContextMenuRequested)
-        # noinspection PyUnresolvedReferences
-        self.treeModel.fileRenamed.connect(self.onItemChanged)
-
         self.comboBoxProfile.currentTextChanged.connect(self.onComboBoxChanged)
-
-        self.actionImport.triggered.connect(self.onImport)
-        self.actionRename.triggered.connect(self.onRename)
-        self.actionDelete.triggered.connect(self.onDelete)
-        self.actionNew_Folder.triggered.connect(self.onNewFolder)
-
+        self.actionImport.triggered.connect(self.treeView.importSavefile)
+        self.actionRename.triggered.connect(self.treeView.renameItem)
+        self.actionDelete.triggered.connect(self.treeView.deleteItem)
+        self.actionNew_Folder.triggered.connect(self.treeView.createFolder)
         self.pushButtonAddProfile.pressed.connect(self.onAddProfile)
-
         self.menubar.hovered.connect(self.updateMenu)
-
-    def initTreeView(self):
-        self.treeModel.setRootPath(str(self.rootPath))
-        self.treeModel.setReadOnly(False)
-
-        self.treeView.setModel(self.treeModel)
-        self.treeView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.updateTreeView()
-
-        self.treeView.setHeaderHidden(True)
-        self.treeView.setColumnHidden(1, True)
-        self.treeView.setColumnHidden(2, True)
-        self.treeView.setColumnHidden(3, True)
+        self.treeView.customContextMenuRequested.connect(self.onContextMenuRequested)
 
     def updateMenu(self):
-        indexes = self.treeView.selectedIndexes()
-        if not indexes:
+        if not self.treeView.selectedIndexes():
             self.actionCut.setEnabled(False)
             self.actionCopy.setEnabled(False)
             self.actionRename.setEnabled(False)
@@ -100,16 +78,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.updatePath()
 
     def updatePath(self):
-        self.treeViewPath = self.rootPath / str(self.comboBoxProfile.currentText())
-
-    def updateTreeView(self):
-        self.treeView.setRootIndex(self.treeModel.index(self.treeViewPath.as_posix()))
-
-    def onNewFolder(self):
-        try:
-            QDir(str(self.rootPath / self.getCurrentProfile())).mkdir("New Folder")
-        except Exception as e:
-            self.statusbar.showMessage(e)
+        self.activePath = self.rootPath / str(self.comboBoxProfile.currentText())
+        self.treeView.setRootPath(self.activePath)
 
     def onContextMenuRequested(self, position):
         self.updateMenu()
@@ -117,56 +87,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def onComboBoxChanged(self):
         self.updatePath()
-        self.updateTreeView()
-        self.statusbar.showMessage(f"Profile changed to: {self.comboBoxProfile.currentText()}")
-
-    def onImport(self):
-        try:
-            sourcePath = self.rootPath / savefileName
-            destinationPath = self.treeViewPath / savefileName
-            if os.path.exists(destinationPath):
-                newDestinationPath = destinationPath
-                i = 1
-                while os.path.exists(newDestinationPath):
-                    newDestinationPath = PurePath(
-                        destinationPath.parents[0], f"{destinationPath.stem} ({i}){destinationPath.suffix}")
-                    i += 1
-                destinationPath = newDestinationPath
-            shutil.copyfile(sourcePath, destinationPath)
-            message = f"Savefile imported as: {destinationPath.name}"
-        except Exception as e:
-            message = f"Error importing savefile: {e}"
-        self.statusbar.showMessage(message)
-
-    def onDelete(self):
-        indexes = self.treeView.selectedIndexes()
-        if indexes:
-            currentItem = self.treeView.currentIndex().data()
-            confirmDialog = QMessageBox()
-            confirmDialog.setIcon(QMessageBox.Icon.Critical)
-            confirmDialog.setWindowTitle("Deleting Item")
-
-            if os.path.isdir(self.treeModel.filePath(self.treeView.currentIndex())):
-                message = f"{currentItem} and all children will be deleted."
-            else:
-                message = f"{currentItem} will be deleted."
-
-            confirmDialog.setText(message)
-            confirmDialog.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
-
-            confirmValue = confirmDialog.exec()
-            if confirmValue == QMessageBox.StandardButton.Ok:
-                self.statusbar.showMessage(f"Deleted item: {currentItem}")
-                self.treeModel.remove(self.treeView.currentIndex())
-        else:
-            self.statusbar.showMessage(f"Error deleting item: No item selected.")
-
-    def onRename(self):
-        self.treeView.edit(self.treeView.currentIndex())
-
-    def onItemChanged(self, path, oldName, newName):
-        print(path)
-        self.statusbar.showMessage(f"{oldName} renamed to: {newName}")
+        self.showMessage(f"Profile changed to: {self.comboBoxProfile.currentText()}")
 
     def onAddProfile(self):
         profileName, ok = QInputDialog().getText(
@@ -180,6 +101,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 message = f"Error creating profile: {e}"
         else:
             message = "Error creating profile: Invalid name"
+        self.showMessage(message)
+
+    def showMessage(self, message):
         self.statusbar.showMessage(message)
 
 

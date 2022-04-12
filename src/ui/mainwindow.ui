@@ -98,7 +98,7 @@
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="StatusBar" name="statusbar"/>
   <action name="actionLoad">
    <property name="text">
     <string>Load</string>
@@ -212,6 +212,11 @@
    <class>FileTreeView</class>
    <extends>QTreeView</extends>
    <header>filetreeview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>StatusBar</class>
+   <extends>QStatusBar</extends>
+   <header>statusbar.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
