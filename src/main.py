@@ -1,7 +1,6 @@
 """
 
 To implement:
-    - Replace
     - Cut
     - Copy
     - Paste
@@ -83,8 +82,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.updatePath()
 
     def updatePath(self):
+        self.treeView.savefileRootPath = self.rootPath
         self.activePath = self.rootPath / str(self.comboBoxProfile.currentText())
-        self.treeView.setRootPath(self.activePath)
+        self.treeView.setModelRootPath(self.activePath)
 
     def onContextMenuRequested(self, position):
         self.updateMenu()
