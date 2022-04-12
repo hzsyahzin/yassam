@@ -1,12 +1,10 @@
 """
 
 To implement:
-    - Load
     - Replace
     - Cut
     - Copy
     - Paste
-    - New Folder
     - Game Select
     - Settings
     - Persist cbx index
@@ -18,8 +16,8 @@ import sys
 from pathlib import Path, PurePath
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QInputDialog
-from PyQt6.QtCore import QDir
 
+from filecontrol import CreateFolder
 from ui.MainWindow import Ui_MainWindow
 
 rootPath = Path.home() / "Documents/Test"
@@ -36,6 +34,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.treeView.parent = self
 
+        self.menuEdit.insertAction(self.actionCut, self.actionReplace)
+        self.menuEdit.insertSeparator(self.actionCut)
+
         self.updateComboBox()
         self.updateMenu()
         self.initConnections()
@@ -48,10 +49,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def initConnections(self):
         self.comboBoxProfile.currentTextChanged.connect(self.onComboBoxChanged)
+
         self.actionImport.triggered.connect(self.treeView.importSavefile)
+        self.actionReplace.triggered.connect(self.treeView.replaceSavefile)
+        self.actionLoad.triggered.connect(self.treeView.loadSavefile)
         self.actionRename.triggered.connect(self.treeView.renameItem)
         self.actionDelete.triggered.connect(self.treeView.deleteItem)
         self.actionNew_Folder.triggered.connect(self.treeView.createFolder)
+
         self.pushButtonAddProfile.pressed.connect(self.onAddProfile)
         self.menubar.hovered.connect(self.updateMenu)
         self.treeView.customContextMenuRequested.connect(self.onContextMenuRequested)
@@ -90,15 +95,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.showMessage(f"Profile changed to: {self.comboBoxProfile.currentText()}")
 
     def onAddProfile(self):
-        profileName, ok = QInputDialog().getText(
+        profileName, dialogOk = QInputDialog().getText(
             self, "Create Profile", "Profile Name:")
-        if ok:
-            try:
-                QDir(self.rootPath.as_posix()).mkdir(profileName)
+        if dialogOk:
+            msg, profileOk = CreateFolder(self.rootPath, profileName)
+            if profileOk:
                 self.updateComboBox()
-                message = f"Profile created as: {profileName}"
-            except Exception as e:
-                message = f"Error creating profile: {e}"
+                message = f"Profile created: {msg.name}"
+            else:
+                message = f"Error creating profile: {msg}"
         else:
             message = "Error creating profile: Invalid name"
         self.showMessage(message)
