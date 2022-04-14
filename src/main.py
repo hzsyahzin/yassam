@@ -19,9 +19,6 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QInputDialog
 from filecontrol import CreateFolder
 from ui.MainWindow import Ui_MainWindow
 
-rootPath = Path.home() / "Documents/Test"
-savefileName = "DRAKS0005.sl2"
-
 paths = {
     "DS1: PTDE": Path.home() / "Documents/NBGI/DarkSouls/DRAKS0005.sl2",
     "DS1: Remastered": None,
@@ -39,6 +36,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.rootPath = None
         self.activePath = None
         self.treeViewPath = None
+        self.savefileName = None
 
         self.setupUi(self)
         self.treeView.parent = self
@@ -63,7 +61,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         return self.comboBoxProfile.currentText()
 
     def getSavefileLocation(self):
-        return self.rootPath / savefileName
+        return self.rootPath / self.savefileName
 
     def initConnections(self):
         self.comboBoxProfile.currentTextChanged.connect(self.onComboBoxChanged)
@@ -87,8 +85,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def updateGame(self, action: QAction):
         self.setWindowTitle(f"yassam - {action.text()}")
-
         self.rootPath = paths[action.text()].parent
+        self.savefileName = paths[action.text()].name
         self.activePath = self.rootPath
         self.treeViewPath = PurePath(self.rootPath)
         self.updateComboBox()
