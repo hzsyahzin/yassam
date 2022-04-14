@@ -12,6 +12,8 @@ import os
 import sys
 from pathlib import Path, PurePath
 
+from PyQt6.QtCore import QSize
+from PyQt6.QtGui import QActionGroup, QAction, QIcon
 from PyQt6.QtWidgets import QApplication, QMainWindow, QInputDialog
 
 from filecontrol import CreateFolder
@@ -20,22 +22,40 @@ from ui.MainWindow import Ui_MainWindow
 rootPath = Path.home() / "Documents/Test"
 savefileName = "DRAKS0005.sl2"
 
+paths = {
+    "DS1: PTDE": Path.home() / "Documents/NBGI/DarkSouls/DRAKS0005.sl2",
+    "DS1: Remastered": None,
+    "DS2: Vanilla": None,
+    "DS2: SOTFS": None,
+    "DS3": None,
+}
+
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.rootPath = rootPath / "Documents/NBGI/DarkSouls"
-        self.activePath = self.rootPath
-        self.treeViewPath = PurePath(rootPath)
+        self.setWindowIcon(QIcon("../res/SpeedSoulsFlameSmallWhite.png"))
+
+        self.rootPath = None
+        self.activePath = None
+        self.treeViewPath = None
 
         self.setupUi(self)
         self.treeView.parent = self
 
+        self.gameGroup = QActionGroup(self)
+        self.gameGroup.addAction(self.actionDS1_PTDE)
+        self.gameGroup.addAction(self.actionDS1_Remastered)
+        self.gameGroup.addAction(self.actionDS2_Vanilla)
+        self.gameGroup.addAction(self.actionDS2_SOTFS)
+        self.gameGroup.addAction(self.actionDS3)
+
+        self.actionDS1_PTDE.setChecked(True)
+
         self.menuEdit.insertAction(self.actionCopy, self.actionReplace)
         self.menuEdit.insertSeparator(self.actionCopy)
-        self.menuEdit.removeAction(self.actionCut)
 
-        self.updateComboBox()
+        self.updateGame(self.gameGroup.checkedAction())
         self.updateMenu()
         self.initConnections()
 
@@ -59,9 +79,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionDelete.triggered.connect(self.treeView.deleteItem)
         self.actionNew_Folder.triggered.connect(self.treeView.createFolder)
 
+        self.gameGroup.triggered.connect(self.updateGame)
+
         self.pushButtonAddProfile.pressed.connect(self.onAddProfile)
         self.menubar.hovered.connect(self.updateMenu)
         self.treeView.customContextMenuRequested.connect(self.onContextMenuRequested)
+
+    def updateGame(self, action: QAction):
+        self.setWindowTitle(f"yassam - {action.text()}")
+
+        self.rootPath = paths[action.text()].parent
+        self.activePath = self.rootPath
+        self.treeViewPath = PurePath(self.rootPath)
+        self.updateComboBox()
 
     def updateMenu(self):
         if not self.treeView.selectedIndexes():

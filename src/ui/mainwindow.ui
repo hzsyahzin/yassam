@@ -86,7 +86,6 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="actionCut"/>
     <addaction name="actionCopy"/>
     <addaction name="actionPaste"/>
     <addaction name="separator"/>
@@ -129,36 +128,43 @@
    </property>
   </action>
   <action name="actionDS1_PTDE">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>DS1: PTDE</string>
    </property>
   </action>
   <action name="actionDS1_Remastered">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>DS1: Remastered</string>
    </property>
   </action>
   <action name="actionDS2_Vanilla">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>DS2: Vanilla</string>
    </property>
   </action>
   <action name="actionDS2_SOTFS">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>DS2: SOTFS</string>
    </property>
   </action>
   <action name="actionDS3">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>DS3</string>
-   </property>
-  </action>
-  <action name="actionCut">
-   <property name="text">
-    <string>Cut</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+X</string>
    </property>
   </action>
   <action name="actionCopy">
