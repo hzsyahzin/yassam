@@ -64,8 +64,14 @@ class FileTreeView(QTreeView):
     def importSavefile(self):
         sourcePath = self.parent.getSavefileLocation()
         destinationPath = self.modelRootPath
-        if self.selectedIndexes() and os.path.isdir(self.getSelectedPath()):
-            destinationPath = self.getSelectedPath()
+
+        indexes = self.selectedIndexes()
+        if indexes:
+            parentPath = PurePath(self.model.filePath(self.selectedIndexes()[0].parent()))
+            if os.path.isdir(self.getSelectedPath()):
+                destinationPath = self.getSelectedPath()
+            elif os.path.isdir(parentPath):
+                destinationPath = parentPath
         destinationPath = PurePath(destinationPath, sourcePath.name)
         msg, ok = CopyFile(sourcePath, destinationPath)
         if ok:
