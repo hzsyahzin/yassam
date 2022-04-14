@@ -21,18 +21,38 @@ def CreateFolder(destination, name):
     return message, ok
 
 
-def CopyFile(source, destination, overwrite=False):
+def DeleteFile(path):
+    try:
+        QFile.remove(str(path))
+        message = PurePath(path)
+        ok = True
+    except Exception as e:
+        message = e
+        ok = False
+    return message, ok
+
+
+def CopyFile(source, destination, overwrite=False, suffix=True):
     try:
         sourcePath = PurePath(source)
         destinationPath = PurePath(destination)
-        destinationStem = destinationPath.stem
+        if suffix:
+            destinationStem = destinationPath.stem
+        else:
+            destinationStem = destinationPath
         if not overwrite:
             if os.path.exists(destinationPath):
                 i = 1
                 while os.path.exists(destinationPath):
-                    destinationPath = PurePath(
-                        destinationPath.parent,
-                        f"{destinationStem} ({i}){destinationPath.suffix}")
+                    if suffix:
+                        destinationPath = PurePath(
+                            destinationPath.parent,
+                            f"{destinationStem} ({i}){destinationPath.suffix}")
+                    else:
+                        destinationPath = PurePath(
+                            destinationPath.parent,
+                            f"{destinationStem} ({i})"
+                        )
                     i += 1
         QFile.copy(str(sourcePath), str(destinationPath))
         message = destinationPath

@@ -1,16 +1,14 @@
 """
 
 To implement:
-    - Cut
-    - Copy
-    - Paste
+    - Copy/paste folders
     - Game Select
     - Settings
     - Persist cbx index
     - Profile deletion
 
 """
-
+import os
 import sys
 from pathlib import Path, PurePath
 
@@ -33,8 +31,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.treeView.parent = self
 
-        self.menuEdit.insertAction(self.actionCut, self.actionReplace)
-        self.menuEdit.insertSeparator(self.actionCut)
+        self.menuEdit.insertAction(self.actionCopy, self.actionReplace)
+        self.menuEdit.insertSeparator(self.actionCopy)
+        self.menuEdit.removeAction(self.actionCut)
 
         self.updateComboBox()
         self.updateMenu()
@@ -52,6 +51,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionImport.triggered.connect(self.treeView.importSavefile)
         self.actionReplace.triggered.connect(self.treeView.replaceSavefile)
         self.actionLoad.triggered.connect(self.treeView.loadSavefile)
+
+        self.actionCopy.triggered.connect(self.treeView.copyItem)
+        self.actionPaste.triggered.connect(self.treeView.pasteItem)
+
         self.actionRename.triggered.connect(self.treeView.renameItem)
         self.actionDelete.triggered.connect(self.treeView.deleteItem)
         self.actionNew_Folder.triggered.connect(self.treeView.createFolder)
@@ -62,17 +65,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def updateMenu(self):
         if not self.treeView.selectedIndexes():
-            self.actionCut.setEnabled(False)
             self.actionCopy.setEnabled(False)
             self.actionRename.setEnabled(False)
             self.actionDelete.setEnabled(False)
             self.actionReplace.setEnabled(False)
         else:
-            self.actionCut.setEnabled(True)
             self.actionCopy.setEnabled(True)
             self.actionRename.setEnabled(True)
             self.actionDelete.setEnabled(True)
-            self.actionReplace.setEnabled(True)
+            if not os.path.isdir(self.treeView.getSelectedPath()):
+                self.actionReplace.setEnabled(True)
+            else:
+                self.actionReplace.setEnabled(False)
+
+        if not QApplication.clipboard().mimeData().urls():
+            self.actionPaste.setEnabled(False)
+        else:
+            self.actionPaste.setEnabled(True)
 
     def updateComboBox(self):
         self.comboBoxProfile.clear()

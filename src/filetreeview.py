@@ -3,8 +3,9 @@ from pathlib import Path, PurePath
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFileSystemModel
-from PyQt6.QtWidgets import QTreeView, QMessageBox, QAbstractItemView
+from PyQt6.QtWidgets import QTreeView, QMessageBox, QAbstractItemView, QApplication
 
+import filecontrol
 from filecontrol import CreateFolder, CopyFile
 from main import MainWindow
 
@@ -48,6 +49,24 @@ class FileTreeView(QTreeView):
         self.modelRootPath = path.as_posix()
         self.model.setRootPath(self.modelRootPath)
         self.setRootIndex(self.model.index(self.modelRootPath))
+
+    def copyItem(self):
+        selectedItems = self.selectionModel().selectedIndexes()
+        mimeData = self.model.mimeData(selectedItems)
+        QApplication.clipboard().setMimeData(mimeData)
+        self.parent.showMessage(f"Item copied: {self.getSelectedPath().relative_to(self.modelRootPath)}")
+
+    def pasteItem(self):
+        sourcePaths = [PurePath(item.path()[1:]) for item in QApplication.clipboard().mimeData().urls()]
+        if not self.selectedIndexes():
+            destinationPath = PurePath(self.modelRootPath)
+        else:
+            destinationPath = self.getSelectedPath()
+        for path in sourcePaths:
+            if not os.path.isdir(destinationPath):
+                destinationPath = destinationPath.parent
+            msg, ok = CopyFile(path, destinationPath / path.name, suffix=False)
+            self.parent.showMessage(f"Item pasted to: {msg.relative_to(self.modelRootPath)}")
 
     def createFolder(self):
         if not self.selectedIndexes():
