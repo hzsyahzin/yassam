@@ -1,11 +1,13 @@
 import shutil
+import os
+from pathlib import Path
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QWidget, QMessageBox, QInputDialog
+from PyQt6.QtGui import QIcon, QFileSystemModel
+from PyQt6.QtWidgets import QWidget, QMessageBox, QInputDialog, QFileDialog, QLineEdit
 
-from globals import paths
 from helpers.filecontrol import CreateFolder
+from helpers.database import LoadSettings, SaveSettings
 from ui.SettingsWindow import Ui_SettingsWindow
 
 
@@ -16,25 +18,49 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
 
         self.currentPath = None
+        self.settings = LoadSettings()
+        self.model = QFileSystemModel()
 
         self.source = source
         self.setupUi(self)
         self.initComponents()
         self.initConnections()
 
+        self.pushButtonDelete.setEnabled(False)
+        self.pushButtonRename.setEnabled(False)
+
     def initConnections(self):
+        self.listWidgetProfiles.pressed.connect(self.onListWidgetProfilesPressed)
+        self.pushButtonRename.pressed.connect(self.onButtonRenamePressed)
         self.pushButtonDelete.pressed.connect(self.deleteProfile)
         self.pushButtonNew.pressed.connect(self.createProfile)
+        self.pushButtonBrowse.pressed.connect(self.onButtonBrowsePressed)
         self.comboBoxGames.currentTextChanged.connect(self.onComboBoxChange)
+        # self.listWidgetProfiles.itemDelegate().closeEditor.connect(self.test)
 
     def initComponents(self):
         self.comboBoxGames.clear()
-        for k, v in paths.items():
+        for k, v in self.settings["savefiles"].items():
             self.comboBoxGames.addItem(k)
         self.onComboBoxChange()
 
+    def onListWidgetProfilesPressed(self):
+        if self.listWidgetProfiles.selectedIndexes():
+            self.pushButtonDelete.setEnabled(True)
+            self.pushButtonRename.setEnabled(True)
+
+    def onButtonBrowsePressed(self):
+        fileName = QFileDialog.getOpenFileName(self, "Select Savefile", str(Path.home()))[0]
+        self.settings["savefiles"][self.comboBoxGames.currentText()] = fileName
+        SaveSettings(self.settings)
+        self.onComboBoxChange()
+        self.source.refreshWindow()
+
+    def onButtonRenamePressed(self):
+        self.listWidgetProfiles.edit(self.listWidgetProfiles.selectedIndexes()[0])
+
     def onComboBoxChange(self):
-        self.currentPath = paths[self.comboBoxGames.currentText()]
+        self.currentPath = Path(self.settings["savefiles"][self.comboBoxGames.currentText()])
         self.lineEditPath.setText(str(self.currentPath))
         self.updateListWidgetProfiles()
 
@@ -43,6 +69,9 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
         for path in self.currentPath.parent.iterdir():
             if path.is_dir():
                 self.listWidgetProfiles.addItem(path.name)
+        for i in range(self.listWidgetProfiles.count()):
+            item = self.listWidgetProfiles.item(i)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
 
     def createProfile(self):
         profileName, dialogOk = QInputDialog().getText(
@@ -72,6 +101,6 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
             if confirmValue == QMessageBox.StandardButton.Ok:
                 shutil.rmtree(self.currentPath.parent / self.listWidgetProfiles.selectedIndexes()[0].data())
         self.updateListWidgetProfiles()
-        self.source.updateComboBox()
+        self.source.refreshWindow()
         self.source.showMessage("Profile deleted: " + currentItem)
 

@@ -1,11 +1,11 @@
 import os
-from pathlib import PurePath
+from pathlib import PurePath, Path
 
 from PyQt6.QtGui import QIcon, QActionGroup, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QInputDialog
 
 from helpers.filecontrol import CreateFolder
-from globals import paths
+from helpers.database import LoadSettings
 from ui.MainWindow import Ui_MainWindow
 from windows.settingswindow import SettingsWindow
 
@@ -14,6 +14,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setWindowIcon(QIcon("../res/SpeedSoulsFlameSmallSquare.png"))
+
+        self.savefilePaths = None
 
         self.rootPath = None
         self.activePath = None
@@ -37,8 +39,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.menuEdit.insertAction(self.actionCopy, self.actionReplace)
         self.menuEdit.insertSeparator(self.actionCopy)
 
-        self.updateGame(self.gameGroup.checkedAction())
-        self.updateMenu()
+        self.refreshWindow()
         self.initConnections()
 
     def getCurrentProfile(self):
@@ -71,8 +72,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def updateGame(self, action: QAction):
         self.setWindowTitle(f"yassam - {action.text()}")
-        self.rootPath = paths[action.text()].parent
-        self.savefileName = paths[action.text()].name
+        newPath = Path(self.savefilePaths[action.text()])
+        self.rootPath = newPath.parent
+        self.savefileName = newPath.name
         self.activePath = self.rootPath
         self.treeViewPath = PurePath(self.rootPath)
         self.updateComboBox()
@@ -100,6 +102,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.actionPaste.setEnabled(False)
         else:
             self.actionPaste.setEnabled(True)
+
+    def refreshWindow(self):
+        self.savefilePaths = LoadSettings()["savefiles"]
+        self.updateGame(self.gameGroup.checkedAction())
+        self.updateMenu()
 
     def updateComboBox(self):
         self.comboBoxProfile.clear()
