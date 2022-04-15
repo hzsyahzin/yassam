@@ -1,5 +1,6 @@
 import os
 from pathlib import PurePath
+from distutils import dir_util
 
 from PyQt6.QtCore import QDir, QFile
 
@@ -54,7 +55,10 @@ def CopyFile(source, destination, overwrite=False, suffix=True):
                             f"{destinationStem} ({i})"
                         )
                     i += 1
-        QFile.copy(str(sourcePath), str(destinationPath))
+        if not os.path.isdir(sourcePath):
+            QFile.copy(str(sourcePath), str(destinationPath))
+        else:
+            dir_util.copy_tree(str(sourcePath), str(destinationPath))
         message = destinationPath
         ok = True
     except Exception as e:

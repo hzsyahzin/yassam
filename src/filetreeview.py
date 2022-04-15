@@ -5,16 +5,14 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtWidgets import QTreeView, QMessageBox, QAbstractItemView, QApplication
 
-import filecontrol
 from filecontrol import CreateFolder, CopyFile
-from main import MainWindow
 
 
 class FileTreeView(QTreeView):
 
     def __init__(self, parent=None):
         super(FileTreeView, self).__init__(parent)
-        self.parent: MainWindow = parent
+        self.parent = parent
         self.model = QFileSystemModel()
         self.model.setRootPath("")
         self.model.setReadOnly(False)
