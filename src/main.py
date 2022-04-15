@@ -1,7 +1,6 @@
 """
 
 To implement:
-    - Persist cbx index
     - Readme
 
 """

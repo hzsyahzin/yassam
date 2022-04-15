@@ -48,6 +48,11 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
             self.comboBoxGames.addItem(k)
         self.onComboBoxChange()
 
+    def noSavefileError(self):
+        self.currentPath = Path.home() / "Documents"
+        self.setModelRoot()
+        self.lineEditPath.clear()
+
     def setModelRoot(self):
         self.model.setRootPath(str(self.currentPath.parent))
         self.listView.setRootIndex(self.model.index(str(self.currentPath.parent)))
@@ -90,9 +95,12 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
         self.source.refreshWindow()
 
     def onComboBoxChange(self):
-        self.currentPath = Path(self.settings["savefiles"][self.comboBoxGames.currentText()])
-        self.lineEditPath.setText(str(self.currentPath))
-        self.setModelRoot()
+        try:
+            self.currentPath = Path(self.settings["savefiles"][self.comboBoxGames.currentText()])
+            self.lineEditPath.setText(str(self.currentPath))
+            self.setModelRoot()
+        except TypeError:
+            self.noSavefileError()
 
     def createProfile(self):
         profileName, dialogOk = QInputDialog().getText(

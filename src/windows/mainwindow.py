@@ -5,7 +5,7 @@ from PyQt6.QtGui import QIcon, QActionGroup, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QInputDialog
 
 from helpers.filecontrol import CreateFolder
-from helpers.database import LoadSettings
+from helpers.database import LoadSettings, SaveSettings
 from ui.MainWindow import Ui_MainWindow
 from windows.settingswindow import SettingsWindow
 
@@ -80,12 +80,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def updateGame(self, action: QAction):
         self.setWindowTitle(f"yassam - {action.text()}")
-        newPath = Path(self.savefilePaths[action.text()])
-        self.rootPath = newPath.parent
-        self.savefileName = newPath.name
-        self.activePath = self.rootPath
-        self.treeViewPath = PurePath(self.rootPath)
-        self.updateComboBox()
+        try:
+            newPath = Path(self.savefilePaths[action.text()])
+            self.rootPath = newPath.parent
+            self.savefileName = newPath.name
+            self.activePath = self.rootPath
+            self.treeViewPath = PurePath(self.rootPath)
+            self.updateComboBox()
+        except TypeError:
+            self.noSavefileError()
 
     def openSettings(self):
         self.settingsWindow = SettingsWindow(source=self)
@@ -118,15 +121,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def updateComboBox(self):
         self.comboBoxProfile.clear()
-        for path in self.rootPath.iterdir():
-            if path.is_dir():
-                self.comboBoxProfile.addItem(path.name)
-        self.updatePath()
+        try:
+            for path in self.rootPath.iterdir():
+                if path.is_dir():
+                    self.comboBoxProfile.addItem(path.name)
+            self.updatePath()
+        except AttributeError:
+            self.noSavefileError()
+
+    def noSavefileError(self):
+        self.comboBoxProfile.clear()
+        self.treeView.setModelRootPath(Path.home())
+        self.showMessage("Error: No savefile location set")
 
     def updatePath(self):
-        self.treeView.savefileRootPath = self.rootPath
-        self.activePath = self.rootPath / str(self.comboBoxProfile.currentText())
-        self.treeView.setModelRootPath(self.activePath)
+        try:
+            self.treeView.savefileRootPath = self.rootPath
+            self.activePath = self.rootPath / str(self.comboBoxProfile.currentText())
+            self.treeView.setModelRootPath(self.activePath)
+        except AttributeError:
+            self.noSavefileError()
 
     def onContextMenuRequested(self, position):
         self.updateMenu()
@@ -156,3 +170,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def closeEvent(self, event) -> None:
         if self.settingsWindow:
             self.settingsWindow.close()
+        settings = LoadSettings()
+        settings["current_game"] = {v: k for k, v in self.games.items()}[self.gameGroup.checkedAction()]
+        SaveSettings(settings)
