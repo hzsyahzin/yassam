@@ -14,7 +14,7 @@ from windows.settingswindow import SettingsWindow
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.setWindowIcon(QIcon("../res/SpeedSoulsFlameSmallSquare.png"))
+        self.setWindowIcon(QIcon("speedsouls.ico"))
 
         self.savefilePaths = None
 

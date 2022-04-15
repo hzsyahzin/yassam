@@ -13,7 +13,7 @@ from ui.SettingsWindow import Ui_SettingsWindow
 class SettingsWindow(QWidget, Ui_SettingsWindow):
     def __init__(self, source, *args, **kwargs):
         super(SettingsWindow, self).__init__(*args, **kwargs)
-        self.setWindowIcon(QIcon("../res/SpeedSoulsFlameSmallSquare.png"))
+        self.setWindowIcon(QIcon("speedsouls.ico"))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
 
         self.currentPath = None
