@@ -5,7 +5,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtWidgets import QTreeView, QMessageBox, QAbstractItemView, QApplication
 
-from helpers.filecontrol import CreateFolder, CopyFile
+from helpers.filecontrol import CreateFolder, CopyFile, DeleteFile
 
 
 class FileTreeView(QTreeView):
@@ -140,6 +140,7 @@ class FileTreeView(QTreeView):
             savefilePath = self.parent.getSavefileLocation()
             activePath = self.getSelectedPath()
             if not os.path.isdir(activePath):
+                DeleteFile(savefilePath)
                 msg, ok = CopyFile(activePath, savefilePath, overwrite=True)
                 if ok:
                     message = f"Savefile loaded: {activePath.relative_to(self.modelRootPath)}"

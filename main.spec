@@ -36,8 +36,8 @@ exe = EXE(pyz,
           console=False,
           disable_windowed_traceback=False,
           target_arch=None,
-          codesign_identity=None,
           icon="res/speedsouls.ico",
+          codesign_identity=None,
           entitlements_file=None )
 coll = COLLECT(exe,
                a.binaries,
@@ -46,4 +46,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='main')
+               name='yassam')

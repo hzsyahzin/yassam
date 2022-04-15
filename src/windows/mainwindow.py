@@ -4,6 +4,7 @@ from pathlib import PurePath, Path
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon, QActionGroup, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QInputDialog, QLabel
+from global_hotkeys import register_hotkeys, start_checking_hotkeys
 
 from helpers.filecontrol import CreateFolder
 from helpers.database import LoadSettings, SaveSettings
@@ -14,7 +15,7 @@ from windows.settingswindow import SettingsWindow
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.setWindowIcon(QIcon("speedsouls.ico"))
+        self.setWindowIcon(QIcon('speedsouls.ico'))
 
         self.savefilePaths = None
 
@@ -55,6 +56,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.refreshWindow()
         self.initConnections()
+
+        self.registerHotkeys()
+        start_checking_hotkeys()
+
+    def registerHotkeys(self):
+        bindings = [
+            [[self.actionLoad.shortcut().toString()], None, self.treeView.loadSavefile],
+            [[self.actionImport.shortcut().toString()], None, self.treeView.importSavefile],
+            [[self.actionReplace.shortcut().toString()], None, self.treeView.replaceSavefile],
+        ]
+        register_hotkeys(bindings)
 
     def getCurrentProfile(self):
         return self.comboBoxProfile.currentText()

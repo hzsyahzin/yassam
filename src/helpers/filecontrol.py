@@ -55,6 +55,8 @@ def CopyFile(source, destination, overwrite=False, suffix=True):
                             f"{destinationStem} ({i})"
                         )
                     i += 1
+        else:
+            DeleteFile(destinationPath)
         if not os.path.isdir(sourcePath):
             QFile.copy(str(sourcePath), str(destinationPath))
         else:
