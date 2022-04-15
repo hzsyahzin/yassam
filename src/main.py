@@ -2,7 +2,6 @@
 
 To implement:
     - Persist cbx index
-    - SQLite stuff
     - Readme
 
 """

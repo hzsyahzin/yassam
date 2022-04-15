@@ -34,7 +34,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.gameGroup.addAction(self.actionDS2_SOTFS)
         self.gameGroup.addAction(self.actionDS3)
 
-        self.actionDS1_PTDE.setChecked(True)
+        self.games = {
+            "DS1: PTDE": self.actionDS1_PTDE,
+            "DS1: Remastered": self.actionDS1_Remastered,
+            "DS2: Vanilla": self.actionDS2_Vanilla,
+            "DS2: SOTFS": self.actionDS2_SOTFS,
+            "DS3": self.actionDS3
+        }
+
+        self.games[LoadSettings()["current_game"]].setChecked(True)
 
         self.menuEdit.insertAction(self.actionCopy, self.actionReplace)
         self.menuEdit.insertSeparator(self.actionCopy)
