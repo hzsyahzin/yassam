@@ -142,4 +142,4 @@ class Ui_MainWindow(object):
         self.actionNew_Folder.setText(_translate("MainWindow", "New Folder"))
         self.actionNew_Folder.setShortcut(_translate("MainWindow", "Ctrl+Shift+N"))
         self.actionSettings.setText(_translate("MainWindow", "Settings"))
-from filetreeview import FileTreeView
+from widgets.filetreeview import FileTreeView

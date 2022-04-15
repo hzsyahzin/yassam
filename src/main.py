@@ -1,9 +1,8 @@
 """
 
 To implement:
-    - Settings
     - Persist cbx index
-    - Profile deletion
+    - SQLite stuff
     - Readme
 
 """
@@ -13,7 +12,7 @@ import ctypes
 
 from PyQt6.QtWidgets import QApplication
 
-from mainwindow import MainWindow
+from windows.mainwindow import MainWindow
 
 if __name__ == '__main__':
     app_id = 'hzsyahzin.yassam.0.1'

@@ -5,7 +5,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtWidgets import QTreeView, QMessageBox, QAbstractItemView, QApplication
 
-from filecontrol import CreateFolder, CopyFile
+from helpers.filecontrol import CreateFolder, CopyFile
 
 
 class FileTreeView(QTreeView):

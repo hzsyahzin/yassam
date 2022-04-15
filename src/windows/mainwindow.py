@@ -4,9 +4,10 @@ from pathlib import PurePath
 from PyQt6.QtGui import QIcon, QActionGroup, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QInputDialog
 
-from filecontrol import CreateFolder
+from helpers.filecontrol import CreateFolder
 from globals import paths
 from ui.MainWindow import Ui_MainWindow
+from windows.settingswindow import SettingsWindow
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -18,6 +19,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.activePath = None
         self.treeViewPath = None
         self.savefileName = None
+
+        self.settingsWindow = None
 
         self.setupUi(self)
         self.treeView.parent = self
@@ -58,6 +61,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionDelete.triggered.connect(self.treeView.deleteItem)
         self.actionNew_Folder.triggered.connect(self.treeView.createFolder)
 
+        self.actionSettings.triggered.connect(self.openSettings)
+
         self.gameGroup.triggered.connect(self.updateGame)
 
         self.pushButtonAddProfile.pressed.connect(self.onAddProfile)
@@ -71,6 +76,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.activePath = self.rootPath
         self.treeViewPath = PurePath(self.rootPath)
         self.updateComboBox()
+
+    def openSettings(self):
+        self.settingsWindow = SettingsWindow(source=self)
+        self.settingsWindow.show()
 
     def updateMenu(self):
         if not self.treeView.selectedIndexes():
@@ -128,3 +137,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def showMessage(self, message):
         self.statusbar.showMessage(message)
+
+    def closeEvent(self, event) -> None:
+        if self.settingsWindow:
+            self.settingsWindow.close()
