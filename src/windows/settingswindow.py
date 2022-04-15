@@ -30,6 +30,8 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
         self.listView.setModel(self.model)
         self.setModelRoot()
 
+        self.lineEditPath.setReadOnly(True)
+
         self.pushButtonDelete.setEnabled(False)
         self.pushButtonRename.setEnabled(False)
 
@@ -49,6 +51,10 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
         self.onComboBoxChange()
 
     def noSavefileError(self):
+        self.listView.hide()
+        self.pushButtonDelete.hide()
+        self.pushButtonRename.hide()
+        self.pushButtonNew.hide()
         self.currentPath = Path.home() / "Documents"
         self.setModelRoot()
         self.lineEditPath.clear()
@@ -69,33 +75,20 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
     def renameProfile(self):
         self.listView.edit(self.listView.currentIndex())
 
-    def deleteProfile(self):
-        currentItem = self.listView.currentIndex().data()
-        confirmDialog = QMessageBox()
-        confirmDialog.setIcon(QMessageBox.Icon.Critical)
-        confirmDialog.setWindowTitle("Deleting Item")
-
-        confirmDialog.setText(f"Profile {currentItem} and all savefiles\nwill be deleted!")
-        confirmDialog.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
-
-        confirmValue = confirmDialog.exec()
-        if confirmValue == QMessageBox.StandardButton.Ok:
-            message = f"Deleted item: {self.model.filePath(self.listView.selectedIndexes()[0]).relative_to(self.currentPath.parent)} "
-            self.model.remove(self.listView.currentIndex())
-        else:
-            message = ""
-        self.source.refreshWindow()
-        self.source.showMessage(message)
-
     def browseSavefiles(self):
         fileName = QFileDialog.getOpenFileName(self, "Select Savefile", str(Path.home()))[0]
-        self.settings["savefiles"][self.comboBoxGames.currentText()] = fileName
+        if fileName != "":
+            self.settings["savefiles"][self.comboBoxGames.currentText()] = fileName
         SaveSettings(self.settings)
         self.onComboBoxChange()
         self.source.refreshWindow()
 
     def onComboBoxChange(self):
         try:
+            self.listView.show()
+            self.pushButtonDelete.show()
+            self.pushButtonRename.show()
+            self.pushButtonNew.show()
             self.currentPath = Path(self.settings["savefiles"][self.comboBoxGames.currentText()])
             self.lineEditPath.setText(str(self.currentPath))
             self.setModelRoot()

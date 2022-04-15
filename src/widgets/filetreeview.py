@@ -40,6 +40,12 @@ class FileTreeView(QTreeView):
     def getSelectedPath(self):
         return PurePath(self.model.filePath(self.selectedIndexes()[0]))
 
+    def hideTree(self):
+        self.setColumnHidden(0, True)
+
+    def showTree(self):
+        self.setColumnHidden(0, False)
+
     def initConnections(self):
         self.model.fileRenamed.connect(self.onItemChange)
 

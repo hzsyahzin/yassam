@@ -26,6 +26,16 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
+      <widget class="QLabel" name="label">
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
+       <property name="text">
+        <string>Savefile Location</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QLineEdit" name="lineEditPath"/>
      </item>
      <item>

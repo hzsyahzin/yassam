@@ -1,8 +1,9 @@
 import os
 from pathlib import PurePath, Path
 
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon, QActionGroup, QAction
-from PyQt6.QtWidgets import QMainWindow, QApplication, QInputDialog
+from PyQt6.QtWidgets import QMainWindow, QApplication, QInputDialog, QLabel
 
 from helpers.filecontrol import CreateFolder
 from helpers.database import LoadSettings, SaveSettings
@@ -47,6 +48,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.menuEdit.insertAction(self.actionCopy, self.actionReplace)
         self.menuEdit.insertSeparator(self.actionCopy)
 
+        self.noSavefileLabel = QLabel(f'No savefile set for {LoadSettings()["current_game"]}\nSet the savefile '
+                                      f'location in File > Settings')
+        self.noSavefileLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.verticalLayout.addWidget(self.noSavefileLabel)
+
         self.refreshWindow()
         self.initConnections()
 
@@ -81,6 +87,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def updateGame(self, action: QAction):
         self.setWindowTitle(f"yassam - {action.text()}")
         try:
+            self.noSavefileLabel.setText(f'No savefile set for {action.text()}\nSet the savefile '
+                                         f'location in File > Settings')
+            self.showWidgets()
+            self.pushButtonAddProfile.setEnabled(True)
             newPath = Path(self.savefilePaths[action.text()])
             self.rootPath = newPath.parent
             self.savefileName = newPath.name
@@ -115,6 +125,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.actionPaste.setEnabled(True)
 
     def refreshWindow(self):
+        self.showWidgets()
+        self.pushButtonAddProfile.setEnabled(True)
         self.savefilePaths = LoadSettings()["savefiles"]
         self.updateGame(self.gameGroup.checkedAction())
         self.updateMenu()
@@ -132,7 +144,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def noSavefileError(self):
         self.comboBoxProfile.clear()
         self.treeView.setModelRootPath(Path.home())
-        self.showMessage("Error: No savefile location set")
+        self.hideWidgets()
+
+    def hideWidgets(self):
+        self.noSavefileLabel.show()
+        self.treeView.hide()
+        self.pushButtonAddProfile.hide()
+        self.comboBoxProfile.hide()
+        self.statusbar.hide()
+
+    def showWidgets(self):
+        self.noSavefileLabel.hide()
+        self.treeView.show()
+        self.pushButtonAddProfile.show()
+        self.comboBoxProfile.show()
+        self.statusbar.show()
 
     def updatePath(self):
         try:

@@ -2,6 +2,9 @@
 
 To implement:
     - Readme.md
+    - Better settings window for no savefile location
+    - QAction update on no game
+    - Other bugs?
 
 """
 

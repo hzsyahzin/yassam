@@ -21,6 +21,10 @@ class Ui_SettingsWindow(object):
         self.verticalLayout.addWidget(self.comboBoxGames)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
+        self.label = QtWidgets.QLabel(SettingsWindow)
+        self.label.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        self.label.setObjectName("label")
+        self.horizontalLayout.addWidget(self.label)
         self.lineEditPath = QtWidgets.QLineEdit(SettingsWindow)
         self.lineEditPath.setObjectName("lineEditPath")
         self.horizontalLayout.addWidget(self.lineEditPath)
@@ -56,6 +60,7 @@ class Ui_SettingsWindow(object):
     def retranslateUi(self, SettingsWindow):
         _translate = QtCore.QCoreApplication.translate
         SettingsWindow.setWindowTitle(_translate("SettingsWindow", "yassam - Settings"))
+        self.label.setText(_translate("SettingsWindow", "Savefile Location"))
         self.pushButtonBrowse.setText(_translate("SettingsWindow", "..."))
         self.pushButtonNew.setText(_translate("SettingsWindow", "New"))
         self.pushButtonRename.setText(_translate("SettingsWindow", "Rename"))
