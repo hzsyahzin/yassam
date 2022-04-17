@@ -3,8 +3,10 @@
 To implement:
     - Readme.md
     - Better settings window for no savefile location
+    - Multi-file support
     - QAction update on no game
     - Other bugs?
+    - Major refactor
 
 """
 

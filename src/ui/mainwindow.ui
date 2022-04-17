@@ -24,10 +24,23 @@
     <property name="bottomMargin">
      <number>0</number>
     </property>
+    <item alignment="Qt::AlignHCenter">
+     <widget class="QLabel" name="labelHelp">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="text">
+       <string>TextLabel</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QComboBox" name="comboBoxProfile"/>
+       <widget class="ProfileComboBox" name="comboBoxProfile"/>
       </item>
       <item>
        <widget class="QPushButton" name="pushButtonAddProfile">
@@ -45,7 +58,38 @@
      </layout>
     </item>
     <item>
-     <widget class="FileTreeView" name="treeView"/>
+     <widget class="FileTreeView" name="treeView">
+      <property name="contextMenuPolicy">
+       <enum>Qt::CustomContextMenu</enum>
+      </property>
+      <property name="acceptDrops">
+       <bool>true</bool>
+      </property>
+      <property name="editTriggers">
+       <set>QAbstractItemView::DoubleClicked</set>
+      </property>
+      <property name="dragEnabled">
+       <bool>true</bool>
+      </property>
+      <property name="dragDropMode">
+       <enum>QAbstractItemView::InternalMove</enum>
+      </property>
+      <property name="defaultDropAction">
+       <enum>Qt::MoveAction</enum>
+      </property>
+      <property name="alternatingRowColors">
+       <bool>false</bool>
+      </property>
+      <property name="uniformRowHeights">
+       <bool>true</bool>
+      </property>
+      <property name="animated">
+       <bool>false</bool>
+      </property>
+      <property name="headerHidden">
+       <bool>true</bool>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -86,6 +130,8 @@
     <property name="title">
      <string>Edit</string>
     </property>
+    <addaction name="actionReplace"/>
+    <addaction name="separator"/>
     <addaction name="actionCopy"/>
     <addaction name="actionPaste"/>
     <addaction name="separator"/>
@@ -134,6 +180,9 @@
    <property name="text">
     <string>DS1: PTDE</string>
    </property>
+   <property name="id" stdset="0">
+    <string>0</string>
+   </property>
   </action>
   <action name="actionDS1_Remastered">
    <property name="checkable">
@@ -141,6 +190,9 @@
    </property>
    <property name="text">
     <string>DS1: Remastered</string>
+   </property>
+   <property name="id" stdset="0">
+    <string>1</string>
    </property>
   </action>
   <action name="actionDS2_Vanilla">
@@ -150,6 +202,9 @@
    <property name="text">
     <string>DS2: Vanilla</string>
    </property>
+   <property name="id" stdset="0">
+    <string>2</string>
+   </property>
   </action>
   <action name="actionDS2_SOTFS">
    <property name="checkable">
@@ -158,6 +213,9 @@
    <property name="text">
     <string>DS2: SOTFS</string>
    </property>
+   <property name="id" stdset="0">
+    <string>3</string>
+   </property>
   </action>
   <action name="actionDS3">
    <property name="checkable">
@@ -165,6 +223,9 @@
    </property>
    <property name="text">
     <string>DS3</string>
+   </property>
+   <property name="id" stdset="0">
+    <string>4</string>
    </property>
   </action>
   <action name="actionCopy">
@@ -217,7 +278,12 @@
   <customwidget>
    <class>FileTreeView</class>
    <extends>QTreeView</extends>
-   <header>filetreeview.h</header>
+   <header>widgets/filetreeview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ProfileComboBox</class>
+   <extends>QComboBox</extends>
+   <header>widgets/profilecombobox.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -21,7 +21,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QComboBox" name="comboBoxGames"/>
+    <widget class="GameComboBox" name="comboBoxGames"/>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
@@ -36,7 +36,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEditPath"/>
+      <widget class="QLineEdit" name="lineEditPath">
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QPushButton" name="pushButtonBrowse">
@@ -60,19 +64,38 @@
     </layout>
    </item>
    <item>
+    <widget class="QLabel" name="labelHelp">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>TextLabel</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QListView" name="listView"/>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <widget class="QPushButton" name="pushButtonNew">
+      <widget class="QPushButton" name="pushButtonAdd">
        <property name="text">
-        <string>New</string>
+        <string>Add</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="pushButtonRename">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Rename</string>
        </property>
@@ -80,6 +103,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="pushButtonDelete">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Delete</string>
        </property>
@@ -89,6 +115,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>GameComboBox</class>
+   <extends>QComboBox</extends>
+   <header>widgets/gamecombobox.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

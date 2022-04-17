@@ -1,194 +1,112 @@
 import os
 from pathlib import Path, PurePath
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QFileSystemModel
-from PyQt6.QtWidgets import QTreeView, QMessageBox, QAbstractItemView, QApplication
+from PyQt6.QtWidgets import QTreeView, QMessageBox, QApplication
 
-from helpers.filecontrol import CreateFolder, CopyFile, DeleteFile
+from controllers.settingscontroller import SettingsController
+from controllers.filecontroller import FileController
 
 
 class FileTreeView(QTreeView):
 
-    def __init__(self, parent=None):
+    postStatusMessage = pyqtSignal(str)
+
+    def __init__(self, parent=None) -> None:
         super(FileTreeView, self).__init__(parent)
-        self.parent = parent
-        self.model = QFileSystemModel()
-        self.model.setRootPath("")
-        self.model.setReadOnly(False)
 
-        self.savefileRootPath = ""
-        self.modelRootPath = ""
+        self.fileModel = QFileSystemModel()
+        self.fileModel.setReadOnly(False)
+        self.setModel(self.fileModel)
 
-        self.setModel(self.model)
-        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        for i in range(1, 4):
+            self.setColumnHidden(i, True)
 
-        self.setDragEnabled(True)
-        self.setAcceptDrops(True)
-        self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
-        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.fileModel.fileRenamed.connect(self.onItemChange)
 
-        self.setEditTriggers(QAbstractItemView.EditTrigger.DoubleClicked)
+    def getSelectedPath(self, relative=False) -> Path | None:
+        if not relative:
+            return Path(self.fileModel.filePath(self.currentIndex()))
+        return Path(self.fileModel.filePath(self.currentIndex())).relative_to(self.fileModel.rootPath())
 
-        self.setHeaderHidden(True)
-        self.setColumnHidden(1, True)
-        self.setColumnHidden(2, True)
-        self.setColumnHidden(3, True)
+    def setFileModelRoot(self, path: Path) -> None:
+        self.fileModel.setRootPath(str(path))
+        self.setRootIndex(self.fileModel.index(str(path)))
 
-        self.initConnections()
-
-    def getSelectedPath(self):
-        return PurePath(self.model.filePath(self.selectedIndexes()[0]))
-
-    def hideTree(self):
-        self.setColumnHidden(0, True)
-
-    def showTree(self):
-        self.setColumnHidden(0, False)
-
-    def initConnections(self):
-        self.model.fileRenamed.connect(self.onItemChange)
-
-    def setModelRootPath(self, path: Path):
-        self.modelRootPath = path.as_posix()
-        self.model.setRootPath(self.modelRootPath)
-        self.setRootIndex(self.model.index(self.modelRootPath))
-
-    def copyItem(self):
-        selectedItems = self.selectionModel().selectedIndexes()
-        mimeData = self.model.mimeData(selectedItems)
-        QApplication.clipboard().setMimeData(mimeData)
-        self.parent.showMessage(f"Item copied: {self.getSelectedPath().relative_to(self.modelRootPath)}")
-
-    def pasteItem(self):
-        sourcePaths = [PurePath(item.path()[1:]) for item in QApplication.clipboard().mimeData().urls()]
-        if not self.selectedIndexes():
-            destinationPath = PurePath(self.modelRootPath)
+    def onSavefileLoad(self) -> None:
+        if self.selectedIndexes():
+            ok = FileController.loadSavefile(SettingsController().getActiveGameID(), self.getSelectedPath())
+            message = "Savefile loaded" if ok else "Error loading savefile: Invalid file selected"
         else:
-            destinationPath = self.getSelectedPath()
+            message = "Error loading savefile: No file selected"
+        self.postStatusMessage.emit(message)
+
+    def onSavefileImport(self) -> None:
+        sourcePath = SettingsController().getActiveSavefilePath()
+        destinationPath = self.fileModel.rootPath()
+        if self.selectedIndexes():
+            selectedItem = self.getSelectedPath()
+            destinationPath = selectedItem if os.path.isdir(selectedItem) else selectedItem.parent
+        path, ok = FileController.copyFile(sourcePath, destinationPath / sourcePath.name)
+        message = f"Savefile imported to: {path.relative_to(self.fileModel.rootPath())}" if ok else \
+            f"Error importing savefile: {path}"
+        self.postStatusMessage.emit(message)
+
+    def onSavefileReplace(self) -> None:
+        if self.selectedIndexes() and os.path.isfile(self.getSelectedPath()):
+            message = ""
+            ok = QMessageBox.warning(self, "Replace Savefile",
+                                     f"Savefile {self.getSelectedPath().name} will be replaced",
+                                     QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+            if ok == QMessageBox.StandardButton.Ok:
+                path, ok = FileController.copyFile(
+                    SettingsController().getActiveSavefilePath(), self.getSelectedPath(), overwrite=True)
+                message = f"Savefile replaced: {self.getSelectedPath(relative=True)}" if ok else \
+                    f"Error replacing savefile: {path}"
+        else:
+            message = f"Error replacing savefile: Invalid selection"
+        self.postStatusMessage.emit(message)
+
+    def onItemCopy(self) -> None:
+        QApplication.clipboard().setMimeData(
+            self.fileModel.mimeData(self.selectionModel().selectedIndexes()))
+        self.postStatusMessage.emit(f"Item copied: {self.getSelectedPath(relative=True)}")
+
+    def onItemPaste(self) -> None:
+        sourcePaths = [PurePath(item.path()[1:]) for item in QApplication.clipboard().mimeData().urls()]
+        destinationPath = self.getSelectedPath() if self.selectedIndexes() else Path(self.fileModel.rootPath())
         for path in sourcePaths:
             if not os.path.isdir(destinationPath):
                 destinationPath = destinationPath.parent
-            msg, ok = CopyFile(path, destinationPath / path.name, suffix=False)
-            self.parent.showMessage(f"Item pasted to: {msg.relative_to(self.modelRootPath)}")
+            path, _ = FileController.copyFile(path, destinationPath / path.name, suffix=False)
+            self.postStatusMessage.emit(f"Item pasted to: {path.relative_to(self.fileModel.rootPath())}")
 
-    def createFolder(self):
-        if not self.selectedIndexes():
-            path = self.modelRootPath
-        else:
-            path = self.getSelectedPath()
-        msg, ok = CreateFolder(path, "New Folder")
-        if ok:
-            message = f"Folder created: {msg.relative_to(self.modelRootPath)}"
-        else:
-            message = f"Error creating folder: {msg}"
-        self.parent.showMessage(message)
-
-    def importSavefile(self):
-        sourcePath = self.parent.getSavefileLocation()
-        destinationPath = self.modelRootPath
-
-        indexes = self.selectedIndexes()
-        if indexes:
-            parentPath = PurePath(self.model.filePath(self.selectedIndexes()[0].parent()))
-            if os.path.isdir(self.getSelectedPath()):
-                destinationPath = self.getSelectedPath()
-            elif os.path.isdir(parentPath):
-                destinationPath = parentPath
-        destinationPath = PurePath(destinationPath, sourcePath.name)
-        msg, ok = CopyFile(sourcePath, destinationPath)
-        if ok:
-            message = f"Savefile imported to: {msg.relative_to(self.modelRootPath)}"
-        else:
-            message = msg
-        self.parent.showMessage(message)
-
-    def replaceSavefile(self):
-        indexes = self.selectedIndexes()
-        if len(indexes) == 1:
-            sourcePath = self.parent.getSavefileLocation()
-            destinationPath = self.getSelectedPath()
-            if not os.path.isdir(destinationPath):
-                currentItem = self.currentIndex().data()
-                confirmDialog = QMessageBox()
-                confirmDialog.setIcon(QMessageBox.Icon.Warning)
-                confirmDialog.setWindowTitle("Replacing Savefile")
-
-                confirmDialog.setText(f"Savefile {currentItem} will be replaced.\nData will be lost.")
-                confirmDialog.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
-
-                confirmValue = confirmDialog.exec()
-                if confirmValue == QMessageBox.StandardButton.Ok:
-                    msg, ok = CopyFile(sourcePath, destinationPath, overwrite=True)
-                    if ok:
-                        message = f"Savefile replaced: {msg.relative_to(self.modelRootPath)}"
-                    else:
-                        message = msg
-                else:
-                    message = ""
-            else:
-                message = "Error replacing savefile: Directory selected"
-        elif len(indexes) > 1:
-            message = "Error replacing savefile: More than one file selected"
-        else:
-            message = "Error replacing savefile: No file selected"
-        self.parent.showMessage(message)
-
-    def loadSavefile(self):
-        indexes = self.selectedIndexes()
-        if len(indexes) == 1:
-            savefilePath = self.parent.getSavefileLocation()
-            activePath = self.getSelectedPath()
-            if not os.path.isdir(activePath):
-                DeleteFile(savefilePath)
-                msg, ok = CopyFile(activePath, savefilePath, overwrite=True)
-                if ok:
-                    message = f"Savefile loaded: {activePath.relative_to(self.modelRootPath)}"
-                else:
-                    message = f"Error loading savefile: {msg}"
-            else:
-                message = "Error loading savefile: Directory selected"
-        elif len(indexes) > 1:
-            message = "Error loading savefile: More than one file selected"
-        else:
-            message = "Error loading savefile: No file selected"
-        self.parent.showMessage(message)
-
-    def renameItem(self):
+    def onItemRename(self) -> None:
         self.edit(self.currentIndex())
 
-    def deleteItem(self):
-        indexes = self.selectedIndexes()
-        if len(indexes) == 1:
-            currentItem = self.currentIndex().data()
-            confirmDialog = QMessageBox()
-            confirmDialog.setIcon(QMessageBox.Icon.Critical)
-            confirmDialog.setWindowTitle("Deleting Item")
-
-            if os.path.isdir(self.getSelectedPath()):
-                msg = f"{currentItem} and any\nchildren will be deleted."
-            else:
-                msg = f"{currentItem} will be deleted."
-
-            confirmDialog.setText(msg)
-            confirmDialog.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
-
-            confirmValue = confirmDialog.exec()
-            if confirmValue == QMessageBox.StandardButton.Ok:
-                message = f"Deleted item: {self.getSelectedPath().relative_to(self.modelRootPath)}"
-                self.model.remove(self.currentIndex())
-            else:
-                message = ""
-        elif len(indexes) > 1:
-            message = "Error deleting item: No support for multiple items"
+    def onItemDelete(self) -> None:
+        if self.selectedIndexes():
+            message = ""
+            ok = QMessageBox.warning(self, "Delete Item", f"Item {self.getSelectedPath().name} will be deleted",
+                                     QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+            if ok == QMessageBox.StandardButton.Ok:
+                message = f"Item deleted: {self.getSelectedPath(relative=True)}"
+                self.fileModel.remove(self.currentIndex())
         else:
-            message = "Error deleting item: No item selected."
-        self.parent.showMessage(message)
+            message = "Error deleting item: No item selected"
+        self.postStatusMessage.emit(message)
 
-    def onItemChange(self, _, old, new) -> None:
-        self.parent.showMessage(f"{old} renamed to: {new}")
+    def onFolderCreate(self) -> None:
+        path = self.getSelectedPath() if self.selectedIndexes() else self.fileModel.rootPath()
+        path, ok = FileController.createFolder(path, "New Folder")
+        message = f"Folder created: {path.relative_to(self.fileModel.rootPath())}" if ok else \
+            f"Error creating folder: {path} "
+        self.postStatusMessage.emit(message)
+
+    def onItemChange(self, _, oldName: str, newName: str) -> None:
+        self.postStatusMessage.emit(f"{oldName} renamed to: {newName}")
 
     def mousePressEvent(self, event) -> None:
         self.clearSelection()
         QTreeView.mousePressEvent(self, event)
-        self.parent.updateMenu()
