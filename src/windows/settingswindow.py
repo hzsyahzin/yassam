@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PyQt6.QtCore import Qt, QDir, pyqtSignal
 from PyQt6.QtGui import QIcon, QFileSystemModel, QKeySequence
-from PyQt6.QtWidgets import QWidget, QFileDialog, QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QFileDialog, QVBoxLayout, QMessageBox
 
 from controllers.filecontroller import FileController
 from ui.SettingsWindow import Ui_SettingsWindow
@@ -90,12 +90,12 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
 
     def onProfileAdd(self) -> None:
         if not FileController.createProfile(self.comboBoxGames.getSelectedGameID()):
-            print("rip")  # TODO: Error message here
+            QMessageBox.critical(self, "Error creating profile", "Profile was unable to be created.")
 
     def onProfileDelete(self) -> None:
         if not FileController.deleteProfile(
                 self.comboBoxGames.getSelectedGameID(), self.listView.currentIndex().data()):
-            print("rip")  # TODO: Error message here
+            QMessageBox.critical(self, "Error creating profile", "Profile was unable to be deleted.")
 
     def onSavefileBrowse(self) -> None:
         savefilePath = QFileDialog.getOpenFileName(self, "Select Savefile")[0]

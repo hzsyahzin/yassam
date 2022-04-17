@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from PyQt6.QtGui import QIcon, QActionGroup, QAction, QShortcut, QKeySequence
+from PyQt6.QtGui import QIcon, QActionGroup, QAction, QKeySequence
 from PyQt6.QtWidgets import QMainWindow, QApplication
 from global_hotkeys import register_hotkeys, start_checking_hotkeys, clear_hotkeys
 
@@ -94,7 +94,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def onProfileAdd(self) -> None:
         if not FileController.createProfile(self.settingsController.getActiveGameID()):
-            print("rip")  # TODO: Error message here
+            self.statusbar.showMessage("Error creating profile")
         self.comboBoxProfile.populate(self.settingsController.getActiveSavefileDirectory())
 
     def onSettingsOpen(self) -> None:
@@ -148,5 +148,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionNew_Folder.setEnabled(False)
         self.actionPaste.setEnabled(False)
 
-        self.labelHelp.setText(f'Error retrieving savefile data for {self.settingsController.getActiveGameName()}')
+        self.labelHelp.setText(f'Error retrieving savefile data for {self.settingsController.getActiveGameName()}\n'
+                               f'Set the savefile location in File > Settings')
         self.labelHelp.show()
