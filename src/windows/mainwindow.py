@@ -1,134 +1,105 @@
 import os
-from pathlib import PurePath, Path
+from pathlib import Path
 
-from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon, QActionGroup, QAction
-from PyQt6.QtWidgets import QMainWindow, QApplication, QInputDialog, QLabel
+from PyQt6.QtWidgets import QMainWindow, QApplication
 from global_hotkeys import register_hotkeys, start_checking_hotkeys
 
-from helpers.filecontrol import CreateFolder
-from helpers.database import LoadSettings, SaveSettings
+from controllers.filecontroller import FileController
+from controllers.settingscontroller import SettingsController
 from ui.MainWindow import Ui_MainWindow
-from windows.settingswindow import SettingsWindow
+from windows.settingswindow import NeoSettingsWindow
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setWindowIcon(QIcon('speedsouls.ico'))
 
-        self.savefilePaths = None
+        self.setupUi(self)
 
-        self.rootPath = None
-        self.activePath = None
-        self.treeViewPath = None
-        self.savefileName = None
+        self.settingsController = SettingsController()
 
         self.settingsWindow = None
 
-        self.setupUi(self)
-        self.treeView.parent = self
+        self.gameActionGroup = QActionGroup(self)
+        self.gameActions = [
+            self.actionDS1_PTDE, self.actionDS1_Remastered,
+            self.actionDS2_Vanilla, self.actionDS2_SOTFS, self.actionDS3]
+        for action in self.gameActions:
+            self.gameActionGroup.addAction(action)
 
-        self.gameGroup = QActionGroup(self)
-        self.gameGroup.addAction(self.actionDS1_PTDE)
-        self.gameGroup.addAction(self.actionDS1_Remastered)
-        self.gameGroup.addAction(self.actionDS2_Vanilla)
-        self.gameGroup.addAction(self.actionDS2_SOTFS)
-        self.gameGroup.addAction(self.actionDS3)
+        self.editActions = [
+            self.actionCopy, self.actionRename, self.actionDelete, self.actionReplace]
 
-        self.games = {
-            "DS1: PTDE": self.actionDS1_PTDE,
-            "DS1: Remastered": self.actionDS1_Remastered,
-            "DS2: Vanilla": self.actionDS2_Vanilla,
-            "DS2: SOTFS": self.actionDS2_SOTFS,
-            "DS3": self.actionDS3
-        }
+        self.setupConnections()
+        self.refresh()
 
-        self.games[LoadSettings()["current_game"]].setChecked(True)
-
-        self.menuEdit.insertAction(self.actionCopy, self.actionReplace)
-        self.menuEdit.insertSeparator(self.actionCopy)
-
-        self.noSavefileLabel = QLabel(f'No savefile set for {LoadSettings()["current_game"]}\nSet the savefile '
-                                      f'location in File > Settings')
-        self.noSavefileLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.verticalLayout.addWidget(self.noSavefileLabel)
-
-        self.refreshWindow()
-        self.initConnections()
-
-        self.registerHotkeys()
-        start_checking_hotkeys()
-
-    def registerHotkeys(self):
-        bindings = [
-            [[self.actionLoad.shortcut().toString()], None, self.treeView.loadSavefile],
-            [[self.actionImport.shortcut().toString()], None, self.treeView.importSavefile],
-            [[self.actionReplace.shortcut().toString()], None, self.treeView.replaceSavefile],
-        ]
-        register_hotkeys(bindings)
-
-    def getCurrentProfile(self):
-        return self.comboBoxProfile.currentText()
-
-    def getSavefileLocation(self):
-        return self.rootPath / self.savefileName
-
-    def initConnections(self):
-        self.comboBoxProfile.currentTextChanged.connect(self.onComboBoxChanged)
-
+    def setupConnections(self) -> None:
+        self.menuEdit.aboutToShow.connect(self.onEditMenuOpen)
+        self.gameActionGroup.triggered.connect(self.onGameChange)
+        self.comboBoxProfile.currentTextChanged.connect(self.onProfileChange)
+        self.pushButtonAddProfile.pressed.connect(self.onProfileAdd)
         self.actionImport.triggered.connect(self.treeView.importSavefile)
         self.actionReplace.triggered.connect(self.treeView.replaceSavefile)
         self.actionLoad.triggered.connect(self.treeView.loadSavefile)
-
         self.actionCopy.triggered.connect(self.treeView.copyItem)
         self.actionPaste.triggered.connect(self.treeView.pasteItem)
-
         self.actionRename.triggered.connect(self.treeView.renameItem)
         self.actionDelete.triggered.connect(self.treeView.deleteItem)
         self.actionNew_Folder.triggered.connect(self.treeView.createFolder)
+        self.actionSettings.triggered.connect(self.onSettingsOpen)
+        self.treeView.postStatusMessage.connect(self.statusbar.showMessage)
+        self.treeView.customContextMenuRequested.connect(self.onCxtMenuOpen)
 
-        self.actionSettings.triggered.connect(self.openSettings)
+    def refresh(self):
+        """ Re-triggers active game selection to re-update widgets. """
+        self.gameActions[self.settingsController.getActiveGameID()].trigger()
 
-        self.gameGroup.triggered.connect(self.updateGame)
+    def getActiveProfileDirectory(self) -> Path | None:
+        return self.settingsController.getActiveSavefileDirectory() / self.comboBoxProfile.currentText()
 
-        self.pushButtonAddProfile.pressed.connect(self.onAddProfile)
-        self.menubar.hovered.connect(self.updateMenu)
-        self.treeView.customContextMenuRequested.connect(self.onContextMenuRequested)
-
-    def updateGame(self, action: QAction):
-        self.setWindowTitle(f"yassam - {action.text()}")
+    def setActiveGame(self, gameName: str) -> None:
         try:
-            self.noSavefileLabel.setText(f'No savefile set for {action.text()}\nSet the savefile '
-                                         f'location in File > Settings')
-            self.showWidgets()
-            self.pushButtonAddProfile.setEnabled(True)
-            newPath = Path(self.savefilePaths[action.text()])
-            self.rootPath = newPath.parent
-            self.savefileName = newPath.name
-            self.activePath = self.rootPath
-            self.treeViewPath = PurePath(self.rootPath)
-            self.updateComboBox()
-        except TypeError:
-            self.noSavefileError()
+            gameID = self.settingsController.getGameIDFromName(gameName)
+            self.settingsController.setActiveGame(gameID)
+            if self.settingsController.isSavefileValid(gameID):
+                self.comboBoxProfile.populate(self.settingsController.getActiveSavefileDirectory())
+                self.treeView.setModelRootPath(self.getActiveProfileDirectory())
+                self.showActiveView()
+            else:
+                raise AttributeError
+        except AttributeError:
+            self.showErrorView()
 
-    def openSettings(self):
-        self.settingsWindow = SettingsWindow(source=self)
+    def onProfileChange(self) -> None:
+        self.treeView.setModelRootPath(self.getActiveProfileDirectory())
+
+    def onGameChange(self, gameAction: QAction) -> None:
+        self.setWindowTitle(gameAction.text())
+        self.setActiveGame(gameAction.text())
+
+    def onProfileAdd(self) -> None:
+        if not FileController.createProfile(self.settingsController.getActiveGameID()):
+            print("rip")  # TODO: Error message here
+        self.comboBoxProfile.populate(self.settingsController.getActiveSavefileDirectory())
+
+    def onSettingsOpen(self) -> None:
+        self.settingsWindow = NeoSettingsWindow(self.settingsController)
+        self.settingsWindow.aboutToClose.connect(self.refresh)
         self.settingsWindow.show()
 
-    def updateMenu(self):
+    def onCxtMenuOpen(self, position) -> None:
+        self.menuEdit.exec(self.treeView.viewport().mapToGlobal(position))
+
+    def onEditMenuOpen(self) -> None:
         if not self.treeView.selectedIndexes():
-            self.actionCopy.setEnabled(False)
-            self.actionRename.setEnabled(False)
-            self.actionDelete.setEnabled(False)
-            self.actionReplace.setEnabled(False)
+            for action in self.editActions:
+                action.setEnabled(False)
         else:
-            self.actionCopy.setEnabled(True)
-            self.actionRename.setEnabled(True)
-            self.actionDelete.setEnabled(True)
-            if not os.path.isdir(self.treeView.getSelectedPath()):
-                self.actionReplace.setEnabled(True)
-            else:
+            for action in self.editActions:
+                action.setEnabled(True)
+            if os.path.isdir(self.treeView.getSelectedPath()):
                 self.actionReplace.setEnabled(False)
 
         if not QApplication.clipboard().mimeData().urls():
@@ -136,78 +107,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             self.actionPaste.setEnabled(True)
 
-    def refreshWindow(self):
-        self.showWidgets()
-        self.pushButtonAddProfile.setEnabled(True)
-        self.savefilePaths = LoadSettings()["savefiles"]
-        self.updateGame(self.gameGroup.checkedAction())
-        self.updateMenu()
+    def showActiveView(self) -> None:
+        self.treeView.show()
+        self.comboBoxProfile.show()
+        self.pushButtonAddProfile.show()
+        self.statusbar.show()
+        self.labelHelp.hide()
 
-    def updateComboBox(self):
-        self.comboBoxProfile.clear()
-        try:
-            for path in self.rootPath.iterdir():
-                if path.is_dir():
-                    self.comboBoxProfile.addItem(path.name)
-            self.updatePath()
-        except AttributeError:
-            self.noSavefileError()
-
-    def noSavefileError(self):
-        self.comboBoxProfile.clear()
-        self.treeView.setModelRootPath(Path.home())
-        self.hideWidgets()
-
-    def hideWidgets(self):
-        self.noSavefileLabel.show()
+    def showErrorView(self) -> None:
         self.treeView.hide()
-        self.pushButtonAddProfile.hide()
         self.comboBoxProfile.hide()
+        self.pushButtonAddProfile.hide()
         self.statusbar.hide()
 
-    def showWidgets(self):
-        self.noSavefileLabel.hide()
-        self.treeView.show()
-        self.pushButtonAddProfile.show()
-        self.comboBoxProfile.show()
-        self.statusbar.show()
-
-    def updatePath(self):
-        try:
-            self.treeView.savefileRootPath = self.rootPath
-            self.activePath = self.rootPath / str(self.comboBoxProfile.currentText())
-            self.treeView.setModelRootPath(self.activePath)
-        except AttributeError:
-            self.noSavefileError()
-
-    def onContextMenuRequested(self, position):
-        self.updateMenu()
-        self.menuEdit.exec(self.treeView.viewport().mapToGlobal(position))
-
-    def onComboBoxChanged(self):
-        self.updatePath()
-        self.showMessage(f"Profile changed to: {self.comboBoxProfile.currentText()}")
-
-    def onAddProfile(self):
-        profileName, dialogOk = QInputDialog().getText(
-            self, "Create Profile", "Profile Name:")
-        if dialogOk:
-            msg, profileOk = CreateFolder(self.rootPath, profileName)
-            if profileOk:
-                self.updateComboBox()
-                message = f"Profile created: {msg.name}"
-            else:
-                message = f"Error creating profile: {msg}"
-        else:
-            message = "Error creating profile: Invalid name"
-        self.showMessage(message)
-
-    def showMessage(self, message):
-        self.statusbar.showMessage(message)
-
-    def closeEvent(self, event) -> None:
-        if self.settingsWindow:
-            self.settingsWindow.close()
-        settings = LoadSettings()
-        settings["current_game"] = {v: k for k, v in self.games.items()}[self.gameGroup.checkedAction()]
-        SaveSettings(settings)
+        self.labelHelp.setText(f'Error retrieving savefile data for {self.settingsController.getActiveGameName()}')
+        self.labelHelp.show()

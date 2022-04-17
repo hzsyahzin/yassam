@@ -19,9 +19,14 @@ class Ui_MainWindow(object):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout.setContentsMargins(-1, -1, -1, 0)
         self.verticalLayout.setObjectName("verticalLayout")
+        self.labelHelp = QtWidgets.QLabel(self.centralwidget)
+        self.labelHelp.setEnabled(True)
+        self.labelHelp.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.labelHelp.setObjectName("labelHelp")
+        self.verticalLayout.addWidget(self.labelHelp, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.comboBoxProfile = QtWidgets.QComboBox(self.centralwidget)
+        self.comboBoxProfile = ProfileComboBox(self.centralwidget)
         self.comboBoxProfile.setObjectName("comboBoxProfile")
         self.horizontalLayout.addWidget(self.comboBoxProfile)
         self.pushButtonAddProfile = QtWidgets.QPushButton(self.centralwidget)
@@ -36,6 +41,8 @@ class Ui_MainWindow(object):
         self.treeView = FileTreeView(self.centralwidget)
         self.treeView.setObjectName("treeView")
         self.verticalLayout.addWidget(self.treeView)
+        self.labelHelp.raise_()
+        self.treeView.raise_()
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 21))
@@ -99,6 +106,8 @@ class Ui_MainWindow(object):
         self.menuFile.addAction(self.actionSettings)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionQuit)
+        self.menuEdit.addAction(self.actionReplace)
+        self.menuEdit.addSeparator()
         self.menuEdit.addAction(self.actionCopy)
         self.menuEdit.addAction(self.actionPaste)
         self.menuEdit.addSeparator()
@@ -115,6 +124,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.labelHelp.setText(_translate("MainWindow", "TextLabel"))
         self.pushButtonAddProfile.setText(_translate("MainWindow", "Add"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuGames.setTitle(_translate("MainWindow", "Games"))
@@ -143,3 +153,4 @@ class Ui_MainWindow(object):
         self.actionNew_Folder.setShortcut(_translate("MainWindow", "Ctrl+Shift+N"))
         self.actionSettings.setText(_translate("MainWindow", "Settings"))
 from widgets.filetreeview import FileTreeView
+from widgets.profilecombobox import ProfileComboBox

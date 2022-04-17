@@ -1,18 +1,21 @@
 import os
 from pathlib import Path, PurePath
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtWidgets import QTreeView, QMessageBox, QAbstractItemView, QApplication
 
-from helpers.filecontrol import CreateFolder, CopyFile, DeleteFile
+from controllers.settingscontroller import SettingsController
+from controllers.filecontroller import FileController
 
 
 class FileTreeView(QTreeView):
 
+    postStatusMessage = pyqtSignal(str)
+    requestMenuUpdate = pyqtSignal()
+
     def __init__(self, parent=None):
         super(FileTreeView, self).__init__(parent)
-        self.parent = parent
         self.model = QFileSystemModel()
         self.model.setRootPath("")
         self.model.setReadOnly(False)
@@ -58,7 +61,7 @@ class FileTreeView(QTreeView):
         selectedItems = self.selectionModel().selectedIndexes()
         mimeData = self.model.mimeData(selectedItems)
         QApplication.clipboard().setMimeData(mimeData)
-        self.parent.showMessage(f"Item copied: {self.getSelectedPath().relative_to(self.modelRootPath)}")
+        self.postStatusMessage.emit(f"Item copied: {self.getSelectedPath().relative_to(self.modelRootPath)}")
 
     def pasteItem(self):
         sourcePaths = [PurePath(item.path()[1:]) for item in QApplication.clipboard().mimeData().urls()]
@@ -69,23 +72,23 @@ class FileTreeView(QTreeView):
         for path in sourcePaths:
             if not os.path.isdir(destinationPath):
                 destinationPath = destinationPath.parent
-            msg, ok = CopyFile(path, destinationPath / path.name, suffix=False)
-            self.parent.showMessage(f"Item pasted to: {msg.relative_to(self.modelRootPath)}")
+            msg, ok = FileController.copyFile(path, destinationPath / path.name, suffix=False)
+            self.postStatusMessage.emit(f"Item pasted to: {msg.relative_to(self.modelRootPath)}")
 
     def createFolder(self):
         if not self.selectedIndexes():
             path = self.modelRootPath
         else:
             path = self.getSelectedPath()
-        msg, ok = CreateFolder(path, "New Folder")
+        msg, ok = FileController.createFolder(path, "New Folder")
         if ok:
             message = f"Folder created: {msg.relative_to(self.modelRootPath)}"
         else:
             message = f"Error creating folder: {msg}"
-        self.parent.showMessage(message)
+        self.postStatusMessage.emit(message)
 
     def importSavefile(self):
-        sourcePath = self.parent.getSavefileLocation()
+        sourcePath = SettingsController().getSavefileLocation()
         destinationPath = self.modelRootPath
 
         indexes = self.selectedIndexes()
@@ -96,17 +99,17 @@ class FileTreeView(QTreeView):
             elif os.path.isdir(parentPath):
                 destinationPath = parentPath
         destinationPath = PurePath(destinationPath, sourcePath.name)
-        msg, ok = CopyFile(sourcePath, destinationPath)
+        msg, ok = FileController.copyFile(sourcePath, destinationPath)
         if ok:
             message = f"Savefile imported to: {msg.relative_to(self.modelRootPath)}"
         else:
             message = msg
-        self.parent.showMessage(message)
+        self.postStatusMessage.emit(message)
 
     def replaceSavefile(self):
         indexes = self.selectedIndexes()
         if len(indexes) == 1:
-            sourcePath = self.parent.getSavefileLocation()
+            sourcePath = SettingsController().getSavefileLocation()
             destinationPath = self.getSelectedPath()
             if not os.path.isdir(destinationPath):
                 currentItem = self.currentIndex().data()
@@ -119,7 +122,7 @@ class FileTreeView(QTreeView):
 
                 confirmValue = confirmDialog.exec()
                 if confirmValue == QMessageBox.StandardButton.Ok:
-                    msg, ok = CopyFile(sourcePath, destinationPath, overwrite=True)
+                    msg, ok = FileController.copyFile(sourcePath, destinationPath, overwrite=True)
                     if ok:
                         message = f"Savefile replaced: {msg.relative_to(self.modelRootPath)}"
                     else:
@@ -132,16 +135,16 @@ class FileTreeView(QTreeView):
             message = "Error replacing savefile: More than one file selected"
         else:
             message = "Error replacing savefile: No file selected"
-        self.parent.showMessage(message)
+        self.postStatusMessage.emit(message)
 
     def loadSavefile(self):
         indexes = self.selectedIndexes()
         if len(indexes) == 1:
-            savefilePath = self.parent.getSavefileLocation()
+            savefilePath = SettingsController().getActiveSavefilePath()
             activePath = self.getSelectedPath()
             if not os.path.isdir(activePath):
-                DeleteFile(savefilePath)
-                msg, ok = CopyFile(activePath, savefilePath, overwrite=True)
+                FileController.deleteFile(savefilePath)
+                msg, ok = FileController.copyFile(activePath, savefilePath, overwrite=True)
                 if ok:
                     message = f"Savefile loaded: {activePath.relative_to(self.modelRootPath)}"
                 else:
@@ -152,7 +155,7 @@ class FileTreeView(QTreeView):
             message = "Error loading savefile: More than one file selected"
         else:
             message = "Error loading savefile: No file selected"
-        self.parent.showMessage(message)
+        self.postStatusMessage.emit(message)
 
     def renameItem(self):
         self.edit(self.currentIndex())
@@ -183,12 +186,12 @@ class FileTreeView(QTreeView):
             message = "Error deleting item: No support for multiple items"
         else:
             message = "Error deleting item: No item selected."
-        self.parent.showMessage(message)
+        self.postStatusMessage.emit(message)
 
     def onItemChange(self, _, old, new) -> None:
-        self.parent.showMessage(f"{old} renamed to: {new}")
+        self.postStatusMessage.emit(f"{old} renamed to: {new}")
 
     def mousePressEvent(self, event) -> None:
         self.clearSelection()
         QTreeView.mousePressEvent(self, event)
-        self.parent.updateMenu()
+        self.requestMenuUpdate.emit()

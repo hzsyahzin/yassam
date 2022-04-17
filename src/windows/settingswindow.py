@@ -1,127 +1,113 @@
-import shutil
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QDir
+from PyQt6.QtCore import Qt, QDir, pyqtSignal
 from PyQt6.QtGui import QIcon, QFileSystemModel
-from PyQt6.QtWidgets import QWidget, QMessageBox, QInputDialog, QFileDialog
+from PyQt6.QtWidgets import QWidget, QFileDialog, QVBoxLayout
 
-from helpers.filecontrol import CreateFolder
-from helpers.database import LoadSettings, SaveSettings
+from controllers.filecontroller import FileController
 from ui.SettingsWindow import Ui_SettingsWindow
 
 
-class SettingsWindow(QWidget, Ui_SettingsWindow):
-    def __init__(self, source, *args, **kwargs):
-        super(SettingsWindow, self).__init__(*args, **kwargs)
+class NeoSettingsWindow(QWidget, Ui_SettingsWindow):
+    aboutToClose = pyqtSignal()
+
+    def __init__(self, settingsController, *args, **kwargs):
+        super(NeoSettingsWindow, self).__init__(*args, **kwargs)
         self.setWindowIcon(QIcon("speedsouls.ico"))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
 
-        self.currentPath = None
-        self.settings = LoadSettings()
-        self.model = QFileSystemModel()
-
-        self.source = source
         self.setupUi(self)
-        self.initComponents()
-        self.initConnections()
 
-        self.model.setReadOnly(False)
-        self.model.setFilter(QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot)
-        self.listView.setModel(self.model)
-        self.setModelRoot()
+        self.settingsController = settingsController
 
-        self.lineEditPath.setReadOnly(True)
+        self.fileModel = QFileSystemModel()
+        self.fileModel.setReadOnly(False)
+        self.fileModel.setFilter(QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot)
 
-        self.pushButtonDelete.setEnabled(False)
-        self.pushButtonRename.setEnabled(False)
+        self.listView.setModel(self.fileModel)
 
-    def initConnections(self):
-        self.pushButtonRename.pressed.connect(self.renameProfile)
-        self.pushButtonBrowse.pressed.connect(self.browseSavefiles)
-        self.pushButtonNew.pressed.connect(self.createProfile)
-        self.pushButtonDelete.pressed.connect(self.deleteProfile)
-        self.comboBoxGames.currentTextChanged.connect(self.onComboBoxChange)
-        self.listView.pressed.connect(self.onListViewPressed)
-        self.listView.itemDelegate().closeEditor.connect(self.onRename)
+        self.listView.setLayout(QVBoxLayout())
+        self.listView.layout().addWidget(self.labelHelp)
 
-    def initComponents(self):
-        self.comboBoxGames.clear()
-        for k, v in self.settings["savefiles"].items():
-            self.comboBoxGames.addItem(k)
+        self.comboBoxGames.populate(self.settingsController.getGameList())
+
+        self.setFileModelRoot(self.settingsController.getSavefileDirectory(
+            self.comboBoxGames.getSelectedGameID()))
+
+        self.setupConnections()
+        self.refresh()
+
+    def refresh(self):
+        """ Re-triggers combobox selection to re-update widgets. """
         self.onComboBoxChange()
 
-    def noSavefileError(self):
-        self.listView.hide()
-        self.pushButtonDelete.hide()
-        self.pushButtonRename.hide()
-        self.pushButtonNew.hide()
-        self.currentPath = Path.home() / "Documents"
-        self.setModelRoot()
-        self.lineEditPath.clear()
+    def setupConnections(self):
+        self.pushButtonRename.pressed.connect(self.onProfileRename)
+        self.pushButtonBrowse.pressed.connect(self.onSavefileBrowse)
+        self.pushButtonAdd.pressed.connect(self.onProfileAdd)
+        self.pushButtonDelete.pressed.connect(self.onProfileDelete)
+        self.comboBoxGames.currentTextChanged.connect(self.onComboBoxChange)
+        self.listView.pressed.connect(self.onListViewPress)
+        self.listView.itemDelegate().closeEditor.connect(self.refresh)
 
-    def setModelRoot(self):
-        self.model.setRootPath(str(self.currentPath.parent))
-        self.listView.setRootIndex(self.model.index(str(self.currentPath.parent)))
+    def setFileModelRoot(self, path: Path) -> None:
+        self.fileModel.setRootPath(str(path))
+        self.listView.setRootIndex(self.fileModel.index(str(path)))
 
-    def onListViewPressed(self):
+    def onComboBoxChange(self) -> None:
+        savefileDirectory = self.settingsController.getSavefileDirectory(
+            self.settingsController.getGameIDFromName(self.comboBoxGames.currentText()))
+        if savefileDirectory:
+            self.showActiveView()
+            self.setFileModelRoot(savefileDirectory)
+            self.lineEditPath.setText(str(savefileDirectory))
+        else:
+            self.showErrorView()
+
+    def onListViewPress(self) -> None:
         if self.listView.selectedIndexes():
             self.pushButtonDelete.setEnabled(True)
             self.pushButtonRename.setEnabled(True)
+        else:
+            self.pushButtonDelete.setEnabled(False)
+            self.pushButtonRename.setEnabled(False)
 
-    def onRename(self, e):
-        self.source.refreshWindow()
-        self.source.showMessage("Profile renamed to: " + e.text())
-
-    def renameProfile(self):
+    def onProfileRename(self) -> None:
         self.listView.edit(self.listView.currentIndex())
 
-    def browseSavefiles(self):
-        fileName = QFileDialog.getOpenFileName(self, "Select Savefile", str(Path.home()))[0]
-        if fileName != "":
-            self.settings["savefiles"][self.comboBoxGames.currentText()] = fileName
-        SaveSettings(self.settings)
-        self.onComboBoxChange()
-        self.source.refreshWindow()
+    def onProfileAdd(self) -> None:
+        if not FileController.createProfile(self.comboBoxGames.getSelectedGameID()):
+            print("rip")  # TODO: Error message here
 
-    def onComboBoxChange(self):
-        try:
-            self.listView.show()
-            self.pushButtonDelete.show()
-            self.pushButtonRename.show()
-            self.pushButtonNew.show()
-            self.currentPath = Path(self.settings["savefiles"][self.comboBoxGames.currentText()])
-            self.lineEditPath.setText(str(self.currentPath))
-            self.setModelRoot()
-        except TypeError:
-            self.noSavefileError()
+    def onProfileDelete(self) -> None:
+        if not FileController.deleteProfile(
+                self.comboBoxGames.getSelectedGameID(), self.listView.currentIndex().data()):
+            print("rip")  # TODO: Error message here
 
-    def createProfile(self):
-        profileName, dialogOk = QInputDialog().getText(
-            self, "Create Profile", "Profile Name:")
-        if dialogOk:
-            msg, profileOk = CreateFolder(self.currentPath.parent, profileName)
-            if profileOk:
-                message = f"Profile created: {msg.name}"
-            else:
-                message = f"Error creating profile: {msg}"
-        else:
-            message = "Error creating profile: Invalid name"
-        self.source.refreshWindow()
-        self.source.showMessage(message)
+    def onSavefileBrowse(self) -> None:
+        savefilePath = QFileDialog.getOpenFileName(self, "Select Savefile")[0]
+        if savefilePath:
+            self.settingsController.setSavefilePath(self.comboBoxGames.getSelectedGameID(), Path(savefilePath))
+        self.refresh()
 
-    def deleteProfile(self):
-        currentItem = ""
-        if self.listView.selectedIndexes():
-            currentItem = self.listView.currentIndex().data()
-            confirmDialog = QMessageBox()
-            confirmDialog.setIcon(QMessageBox.Icon.Critical)
-            confirmDialog.setWindowTitle("Deleting Item")
-            confirmDialog.setText(f"Profile {currentItem} and all\nsavefiles will be deleted.")
-            confirmDialog.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+    def showActiveView(self) -> None:
+        self.listView.clearSelection()
+        self.pushButtonDelete.setEnabled(False)
+        self.pushButtonRename.setEnabled(False)
+        self.pushButtonAdd.setEnabled(True)
+        self.listView.setModel(self.fileModel)
+        self.labelHelp.hide()
 
-            confirmValue = confirmDialog.exec()
-            if confirmValue == QMessageBox.StandardButton.Ok:
-                shutil.rmtree(self.currentPath.parent / self.listView.selectedIndexes()[0].data())
-        self.source.refreshWindow()
-        self.source.showMessage("Profile deleted: " + currentItem)
+    def showErrorView(self) -> None:
+        self.listView.setModel(None)
+        self.listView.clearSelection()
+        self.pushButtonDelete.setEnabled(False)
+        self.pushButtonRename.setEnabled(False)
+        self.pushButtonAdd.setEnabled(False)
+        self.lineEditPath.clear()
 
+        self.labelHelp.show()
+        self.labelHelp.setText(f"No savefile location set for {self.comboBoxGames.currentText()}")
+
+    def closeEvent(self, event) -> None:
+        self.aboutToClose.emit()
