@@ -48,8 +48,8 @@ class FileTreeView(QTreeView):
         if self.selectedIndexes():
             selectedItem = self.getSelectedPath()
             destinationPath = selectedItem if os.path.isdir(selectedItem) else selectedItem.parent
-        path, ok = FileController.copyFile(sourcePath, destinationPath / sourcePath.name)
-        message = f"Savefile imported to: {path.relative_to(self.fileModel.rootPath())}" if ok else \
+        path, ok = FileController.copyFile(sourcePath, PurePath(destinationPath, sourcePath.name))
+        message = f"Savefile imported as: {path.relative_to(self.fileModel.rootPath())}" if ok else \
             f"Error importing savefile: {path}"
         self.postStatusMessage.emit(message)
 
@@ -69,18 +69,23 @@ class FileTreeView(QTreeView):
         self.postStatusMessage.emit(message)
 
     def onItemCopy(self) -> None:
-        QApplication.clipboard().setMimeData(
-            self.fileModel.mimeData(self.selectionModel().selectedIndexes()))
-        self.postStatusMessage.emit(f"Item copied: {self.getSelectedPath(relative=True)}")
+        message = ""
+        if self.selectedIndexes():
+            QApplication.clipboard().setMimeData(
+                self.fileModel.mimeData(self.selectionModel().selectedIndexes()))
+            message = f"Item copied: {self.getSelectedPath(relative=True)}"
+        self.postStatusMessage.emit(message)
 
     def onItemPaste(self) -> None:
-        sourcePaths = [PurePath(item.path()[1:]) for item in QApplication.clipboard().mimeData().urls()]
+        sourcePaths = [Path(item.path()[1:]) for item in QApplication.clipboard().mimeData().urls()]
         destinationPath = self.getSelectedPath() if self.selectedIndexes() else Path(self.fileModel.rootPath())
+        message = ""
         for path in sourcePaths:
             if not os.path.isdir(destinationPath):
                 destinationPath = destinationPath.parent
-            path, _ = FileController.copyFile(path, destinationPath / path.name, suffix=False)
-            self.postStatusMessage.emit(f"Item pasted to: {path.relative_to(self.fileModel.rootPath())}")
+            path, _ = FileController.copyFile(path, PurePath(destinationPath, path.name), suffix=False)
+            message = f"Item pasted to: {path.relative_to(self.fileModel.rootPath())}"
+        self.postStatusMessage.emit(message)
 
     def onItemRename(self) -> None:
         self.edit(self.currentIndex())

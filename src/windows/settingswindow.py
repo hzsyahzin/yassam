@@ -1,18 +1,18 @@
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QDir, pyqtSignal
-from PyQt6.QtGui import QIcon, QFileSystemModel
+from PyQt6.QtGui import QIcon, QFileSystemModel, QKeySequence
 from PyQt6.QtWidgets import QWidget, QFileDialog, QVBoxLayout
 
 from controllers.filecontroller import FileController
 from ui.SettingsWindow import Ui_SettingsWindow
 
 
-class NeoSettingsWindow(QWidget, Ui_SettingsWindow):
+class SettingsWindow(QWidget, Ui_SettingsWindow):
     aboutToClose = pyqtSignal()
 
     def __init__(self, settingsController, *args, **kwargs):
-        super(NeoSettingsWindow, self).__init__(*args, **kwargs)
+        super(SettingsWindow, self).__init__(*args, **kwargs)
         self.setWindowIcon(QIcon("speedsouls.ico"))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
 
@@ -25,7 +25,6 @@ class NeoSettingsWindow(QWidget, Ui_SettingsWindow):
         self.fileModel.setFilter(QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot)
 
         self.listView.setModel(self.fileModel)
-
         self.listView.setLayout(QVBoxLayout())
         self.listView.layout().addWidget(self.labelHelp)
 
@@ -35,6 +34,7 @@ class NeoSettingsWindow(QWidget, Ui_SettingsWindow):
             self.comboBoxGames.getSelectedGameID()))
 
         self.setupConnections()
+        self.setupHotkeys()
         self.refresh()
 
     def refresh(self):
@@ -42,6 +42,9 @@ class NeoSettingsWindow(QWidget, Ui_SettingsWindow):
         self.onComboBoxChange()
 
     def setupConnections(self):
+        self.keyInputLoad.editingFinished.connect(self.onHotkeySet)
+        self.keyInputReplace.editingFinished.connect(self.onHotkeySet)
+        self.keyInputImport.editingFinished.connect(self.onHotkeySet)
         self.pushButtonRename.pressed.connect(self.onProfileRename)
         self.pushButtonBrowse.pressed.connect(self.onSavefileBrowse)
         self.pushButtonAdd.pressed.connect(self.onProfileAdd)
@@ -50,13 +53,23 @@ class NeoSettingsWindow(QWidget, Ui_SettingsWindow):
         self.listView.pressed.connect(self.onListViewPress)
         self.listView.itemDelegate().closeEditor.connect(self.refresh)
 
+    def setupHotkeys(self):
+        self.checkBoxHotkey.setChecked(self.settingsController.isGlobalHotkey())
+        self.keyInputLoad.setKeySequence(QKeySequence(self.settingsController.getHotkey("load")))
+        self.keyInputReplace.setKeySequence(QKeySequence(self.settingsController.getHotkey("replace")))
+        self.keyInputImport.setKeySequence(QKeySequence(self.settingsController.getHotkey("import")))
+
     def setFileModelRoot(self, path: Path) -> None:
         self.fileModel.setRootPath(str(path))
         self.listView.setRootIndex(self.fileModel.index(str(path)))
 
+    def onHotkeySet(self) -> None:
+        self.settingsController.setHotkey("load", self.keyInputLoad.keySequence().toString())
+        self.settingsController.setHotkey("replace", self.keyInputReplace.keySequence().toString())
+        self.settingsController.setHotkey("import", self.keyInputImport.keySequence().toString())
+
     def onComboBoxChange(self) -> None:
-        savefileDirectory = self.settingsController.getSavefileDirectory(
-            self.settingsController.getGameIDFromName(self.comboBoxGames.currentText()))
+        savefileDirectory = self.settingsController.getSavefileDirectory(self.comboBoxGames.getSelectedGameID())
         if savefileDirectory:
             self.showActiveView()
             self.setFileModelRoot(savefileDirectory)

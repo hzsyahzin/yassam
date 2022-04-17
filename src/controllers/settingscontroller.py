@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 
 class SettingsController:
@@ -8,16 +8,34 @@ class SettingsController:
         with open("./settings.json") as settingsFile:
             self.settings = json.load(settingsFile)
 
+    def isGlobalHotkey(self) -> bool:
+        return self.settings["global_hotkeys_enabled"]
+
     def isSavefileValid(self, gameID: int) -> bool:
         if self.getSavefilePath(gameID):
             return True
         return False
 
+    def setHotkey(self, operation: str, hotkey: str):
+        self.settings["hotkey_config"][operation] = hotkey
+        self.saveSettings()
+
+    def setGlobalHotkey(self, isTrue: bool) -> None:
+        self.settings["global_hotkeys"] = isTrue
+        self.saveSettings()
+
+    def setSavefilePath(self, gameID: int, path: Path) -> None:
+        self.settings["savefiles"][str(gameID)] = str(path)
+
+    def setActiveGame(self, gameID: int) -> None:
+        self.settings["current_game"] = str(gameID)
+        self.saveSettings()
+
+    def getHotkey(self, operation: str) -> str:
+        return self.settings["hotkey_config"][operation]
+
     def getGameList(self) -> List[str]:
         return self.settings["games"].values()
-
-    def getGameIDFromName(self, gameName: str) -> int:
-        return {v: gameID for gameID, v in self.settings["games"].items()}[gameName]
 
     def getActiveGameID(self) -> int:
         return int(self.settings["current_game"])
@@ -54,13 +72,6 @@ class SettingsController:
             return self.getSavefilePath(self.getActiveGameID())
         except (TypeError, AttributeError):
             return None
-
-    def setSavefilePath(self, gameID: int, path: Path) -> None:
-        self.settings["savefiles"][str(gameID)] = str(path)
-
-    def setActiveGame(self, gameID: int) -> None:
-        self.settings["current_game"] = str(gameID)
-        self.saveSettings()
 
     def saveSettings(self) -> None:
         with open("./settings.json", "w") as settingsFile:

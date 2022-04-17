@@ -1,17 +1,1 @@
-{
-  "games": {
-    "0": "DS1: PTDE",
-    "1": "DS1: Remastered",
-    "2": "DS2: Vanilla",
-    "3": "DS2: SOTFS",
-    "4": "DS3"
-  },
-  "savefiles": {
-    "0": null,
-    "1": null,
-    "2": null,
-    "3": null,
-    "4": null
-  },
-  "current_game": "0"
-}
+{"games": {"0": "DS1: PTDE", "1": "DS1: Remastered", "2": "DS2: Vanilla", "3": "DS2: SOTFS", "4": "DS3"}, "savefiles": {"0": null, "1": null, "2": null, "3": null, "4": null}, "current_game": "0", "global_hotkeys_enabled": true, "hotkey_config": {"load": "f1", "replace": "f2", "import": "f3"}}

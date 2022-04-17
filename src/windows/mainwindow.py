@@ -1,14 +1,14 @@
 import os
 from pathlib import Path
 
-from PyQt6.QtGui import QIcon, QActionGroup, QAction
+from PyQt6.QtGui import QIcon, QActionGroup, QAction, QShortcut, QKeySequence
 from PyQt6.QtWidgets import QMainWindow, QApplication
-from global_hotkeys import register_hotkeys, start_checking_hotkeys
+from global_hotkeys import register_hotkeys, start_checking_hotkeys, clear_hotkeys
 
 from controllers.filecontroller import FileController
 from controllers.settingscontroller import SettingsController
 from ui.MainWindow import Ui_MainWindow
-from windows.settingswindow import NeoSettingsWindow
+from windows.settingswindow import SettingsWindow
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -34,6 +34,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.actionCopy, self.actionRename, self.actionDelete, self.actionReplace]
 
         self.setupConnections()
+        self.setHotkeys()
         self.refresh()
 
     def setupConnections(self) -> None:
@@ -41,7 +42,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.gameActionGroup.triggered.connect(self.onGameChange)
         self.comboBoxProfile.currentTextChanged.connect(self.onProfileChange)
         self.pushButtonAddProfile.pressed.connect(self.onProfileAdd)
-
         self.actionImport.triggered.connect(self.treeView.onSavefileImport)
         self.actionReplace.triggered.connect(self.treeView.onSavefileReplace)
         self.actionLoad.triggered.connect(self.treeView.onSavefileLoad)
@@ -61,6 +61,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def getActiveProfileDirectory(self) -> Path | None:
         return self.settingsController.getActiveSavefileDirectory() / self.comboBoxProfile.currentText()
 
+    def setHotkeys(self) -> None:
+        self.actionLoad.setShortcut(QKeySequence(self.settingsController.getHotkey("load")))
+        self.actionReplace.setShortcut(QKeySequence(self.settingsController.getHotkey("replace")))
+        self.actionImport.setShortcut(QKeySequence(self.settingsController.getHotkey("import")))
+        if self.settingsController.isGlobalHotkey():
+            clear_hotkeys()
+            register_hotkeys([
+                [[self.settingsController.getHotkey("load")], None, self.treeView.onSavefileLoad],
+                [[self.settingsController.getHotkey("replace")], None, self.treeView.onSavefileReplace],
+                [[self.settingsController.getHotkey("import")], None, self.treeView.onSavefileImport]])
+            start_checking_hotkeys()
+
     def setActiveGame(self, gameID: int) -> None:
         try:
             self.settingsController.setActiveGame(gameID)
@@ -77,7 +89,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.treeView.setFileModelRoot(self.getActiveProfileDirectory())
 
     def onGameChange(self, gameAction: QAction) -> None:
-        self.setWindowTitle(gameAction.text())
+        self.setWindowTitle(f"Yassam - {gameAction.text()}")
         self.setActiveGame(int(gameAction.property("id")))
 
     def onProfileAdd(self) -> None:
@@ -86,9 +98,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.comboBoxProfile.populate(self.settingsController.getActiveSavefileDirectory())
 
     def onSettingsOpen(self) -> None:
-        self.settingsWindow = NeoSettingsWindow(self.settingsController)
-        self.settingsWindow.aboutToClose.connect(self.refresh)
+        clear_hotkeys()
+        self.settingsWindow = SettingsWindow(self.settingsController)
+        self.settingsWindow.aboutToClose.connect(self.onSettingsClose)
         self.settingsWindow.show()
+
+    def onSettingsClose(self) -> None:
+        self.setHotkeys()
+        self.refresh()
 
     def onCxtMenuOpen(self, position) -> None:
         self.menuEdit.exec(self.treeView.viewport().mapToGlobal(position))
@@ -103,7 +120,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if os.path.isdir(self.treeView.getSelectedPath()):
                 self.actionReplace.setEnabled(False)
 
-        if not QApplication.clipboard().mimeData().urls():
+        if not QApplication.clipboard().mimeData().hasUrls():
             self.actionPaste.setEnabled(False)
         else:
             self.actionPaste.setEnabled(True)
@@ -112,12 +129,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.treeView.show()
         self.comboBoxProfile.show()
         self.pushButtonAddProfile.show()
+
+        self.actionLoad.setEnabled(True)
+        self.actionImport.setEnabled(True)
+        self.actionNew_Folder.setEnabled(True)
+        self.actionPaste.setEnabled(True)
+
         self.labelHelp.hide()
 
     def showErrorView(self) -> None:
         self.treeView.hide()
         self.comboBoxProfile.hide()
         self.pushButtonAddProfile.hide()
+
+        self.actionLoad.setEnabled(False)
+        self.actionReplace.setEnabled(False)
+        self.actionImport.setEnabled(False)
+        self.actionNew_Folder.setEnabled(False)
+        self.actionPaste.setEnabled(False)
 
         self.labelHelp.setText(f'Error retrieving savefile data for {self.settingsController.getActiveGameName()}')
         self.labelHelp.show()
