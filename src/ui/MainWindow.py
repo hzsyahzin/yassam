@@ -51,6 +51,8 @@ class Ui_MainWindow(object):
         self.treeView.setHeaderHidden(True)
         self.treeView.setObjectName("treeView")
         self.verticalLayout.addWidget(self.treeView)
+        self.labelHelp.raise_()
+        self.treeView.raise_()
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 21))

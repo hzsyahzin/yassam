@@ -92,6 +92,8 @@
      </widget>
     </item>
    </layout>
+   <zorder>labelHelp</zorder>
+   <zorder>treeView</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
