@@ -5,7 +5,7 @@ from typing import List, Dict
 
 class SettingsController:
     def __init__(self):
-        with open("./settings.json") as settingsFile:
+        with open("res/settings.json") as settingsFile:
             self.settings = json.load(settingsFile)
 
     def isGlobalHotkey(self) -> bool:
@@ -74,5 +74,5 @@ class SettingsController:
             return None
 
     def saveSettings(self) -> None:
-        with open("./settings.json", "w") as settingsFile:
+        with open("res/settings.json", "w") as settingsFile:
             settingsFile.write(json.dumps(self.settings))

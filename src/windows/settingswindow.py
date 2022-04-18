@@ -13,7 +13,7 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
 
     def __init__(self, settingsController, *args, **kwargs):
         super(SettingsWindow, self).__init__(*args, **kwargs)
-        self.setWindowIcon(QIcon("speedsouls.ico"))
+        self.setWindowIcon(QIcon("icons:speedsouls.ico"))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
 
         self.setupUi(self)

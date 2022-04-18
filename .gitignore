@@ -1,3 +1,4 @@
-/build/
+/yassam.build/
 /venv/
-/dist/
+/yassam.dist/
+/.idea/
