@@ -92,8 +92,6 @@
      </widget>
     </item>
    </layout>
-   <zorder>labelHelp</zorder>
-   <zorder>treeView</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -150,24 +148,15 @@
    <property name="text">
     <string>Load</string>
    </property>
-   <property name="shortcut">
-    <string>F1</string>
-   </property>
   </action>
   <action name="actionReplace">
    <property name="text">
     <string>Replace</string>
    </property>
-   <property name="shortcut">
-    <string>F2</string>
-   </property>
   </action>
   <action name="actionImport">
    <property name="text">
     <string>Import</string>
-   </property>
-   <property name="shortcut">
-    <string>F3</string>
    </property>
   </action>
   <action name="actionQuit">

@@ -35,9 +35,16 @@ class FileTreeView(QTreeView):
         self.setRootIndex(self.fileModel.index(str(path)))
 
     def onSavefileLoad(self) -> None:
+        savefilePath = SettingsController().getActiveSavefilePath()
         if self.selectedIndexes():
-            ok = FileController.loadSavefile(SettingsController().getActiveGameID(), self.getSelectedPath())
-            message = "Savefile loaded" if ok else "Error loading savefile: Invalid file selected"
+            sourcePath = self.getSelectedPath()
+            if os.path.isfile(sourcePath):
+                FileController.deleteFile(savefilePath)
+                msg, ok = FileController.copyFile(sourcePath, savefilePath, overwrite=True)
+                message = f"Savefile loaded: {sourcePath.name}" if ok else "Error loading savefile: Invalid file " \
+                                                                           "selected "
+            else:
+                message = "Error loading savefile: Directory selected"
         else:
             message = "Error loading savefile: No file selected"
         self.postStatusMessage.emit(message)
@@ -103,7 +110,10 @@ class FileTreeView(QTreeView):
         self.postStatusMessage.emit(message)
 
     def onFolderCreate(self) -> None:
-        path = self.getSelectedPath() if self.selectedIndexes() else self.fileModel.rootPath()
+        path = self.fileModel.rootPath()
+        if self.selectedIndexes():
+            selectedItem = self.getSelectedPath()
+            path = selectedItem if os.path.isdir(selectedItem) else selectedItem.parent
         path, ok = FileController.createFolder(path, "New Folder")
         message = f"Folder created: {path.relative_to(self.fileModel.rootPath())}" if ok else \
             f"Error creating folder: {path} "

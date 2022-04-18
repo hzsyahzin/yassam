@@ -30,9 +30,6 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
 
         self.comboBoxGames.populate(self.settingsController.getGameList())
 
-        self.setFileModelRoot(self.settingsController.getSavefileDirectory(
-            self.comboBoxGames.getSelectedGameID()))
-
         self.setupConnections()
         self.setupHotkeys()
         self.refresh()
@@ -50,23 +47,27 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
         self.pushButtonAdd.pressed.connect(self.onProfileAdd)
         self.pushButtonDelete.pressed.connect(self.onProfileDelete)
         self.comboBoxGames.currentTextChanged.connect(self.onComboBoxChange)
+        self.checkBoxHotkey.stateChanged.connect(self.onGlobalHotkeyCheck)
         self.listView.pressed.connect(self.onListViewPress)
         self.listView.itemDelegate().closeEditor.connect(self.refresh)
 
     def setupHotkeys(self):
         self.checkBoxHotkey.setChecked(self.settingsController.isGlobalHotkey())
-        self.keyInputLoad.setKeySequence(QKeySequence(self.settingsController.getHotkey("load")))
-        self.keyInputReplace.setKeySequence(QKeySequence(self.settingsController.getHotkey("replace")))
-        self.keyInputImport.setKeySequence(QKeySequence(self.settingsController.getHotkey("import")))
+        self.keyInputLoad.setKeySequence(QKeySequence(self.settingsController.getHotkey("Load")))
+        self.keyInputReplace.setKeySequence(QKeySequence(self.settingsController.getHotkey("Replace")))
+        self.keyInputImport.setKeySequence(QKeySequence(self.settingsController.getHotkey("Import")))
 
     def setFileModelRoot(self, path: Path) -> None:
         self.fileModel.setRootPath(str(path))
         self.listView.setRootIndex(self.fileModel.index(str(path)))
 
+    def onGlobalHotkeyCheck(self, state: int) -> None:
+        self.settingsController.setGlobalHotkey(bool(state))
+
     def onHotkeySet(self) -> None:
-        self.settingsController.setHotkey("load", self.keyInputLoad.keySequence().toString())
-        self.settingsController.setHotkey("replace", self.keyInputReplace.keySequence().toString())
-        self.settingsController.setHotkey("import", self.keyInputImport.keySequence().toString())
+        self.settingsController.setHotkey("Load", self.keyInputLoad.keySequence().toString())
+        self.settingsController.setHotkey("Replace", self.keyInputReplace.keySequence().toString())
+        self.settingsController.setHotkey("Import", self.keyInputImport.keySequence().toString())
 
     def onComboBoxChange(self) -> None:
         savefileDirectory = self.settingsController.getSavefileDirectory(self.comboBoxGames.getSelectedGameID())
@@ -111,16 +112,17 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
         self.listView.setModel(self.fileModel)
         self.labelHelp.hide()
 
-    def showErrorView(self) -> None:
+    def showErrorView(self, noSavefile=True) -> None:
         self.listView.setModel(None)
         self.listView.clearSelection()
         self.pushButtonDelete.setEnabled(False)
         self.pushButtonRename.setEnabled(False)
         self.pushButtonAdd.setEnabled(False)
-        self.lineEditPath.clear()
 
+        if noSavefile:
+            self.lineEditPath.clear()
+            self.labelHelp.setText(f"No savefile location set for {self.comboBoxGames.currentText()}")
         self.labelHelp.show()
-        self.labelHelp.setText(f"No savefile location set for {self.comboBoxGames.currentText()}")
 
     def closeEvent(self, event) -> None:
         self.aboutToClose.emit()

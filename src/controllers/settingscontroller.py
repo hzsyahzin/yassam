@@ -21,7 +21,7 @@ class SettingsController:
         self.saveSettings()
 
     def setGlobalHotkey(self, isTrue: bool) -> None:
-        self.settings["global_hotkeys"] = isTrue
+        self.settings["global_hotkeys_enabled"] = isTrue
         self.saveSettings()
 
     def setSavefilePath(self, gameID: int, path: Path) -> None:

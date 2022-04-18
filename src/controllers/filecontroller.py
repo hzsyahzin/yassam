@@ -1,7 +1,7 @@
 import os
 import shutil
 from distutils import dir_util
-from pathlib import Path, PurePath
+from pathlib import PurePath
 
 from PyQt6.QtCore import QDir, QFile
 from PyQt6.QtWidgets import QInputDialog, QMessageBox, QWidget
@@ -30,24 +30,6 @@ class FileController:
             shutil.rmtree(SettingsController().getSavefileDirectory(gameID) / profileName)
             return True
         return False
-
-    @staticmethod
-    def loadSavefile(gameID: int, sourcePath: Path) -> bool:
-        savefilePath = SettingsController().getSavefilePath(gameID)
-        if os.path.isfile(sourcePath):
-            FileController.deleteFile(savefilePath)
-            msg, ok = FileController.copyFile(sourcePath, savefilePath, overwrite=True)
-            if ok:
-                return True
-        return False
-
-    @staticmethod
-    def importSavefile(gameID: int, destinationPath: Path) -> bool:
-        pass
-
-    @staticmethod
-    def replaceSavefile(gameID: int, destinationPath: Path) -> bool:
-        pass
 
     @staticmethod
     def createFolder(destination, name):
