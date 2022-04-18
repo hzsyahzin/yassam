@@ -1,0 +1,1 @@
+python -m nuitka --standalone src/yassam.py --include-data-dir=./src/res=res --plugin-enable=pyqt6 --windows-icon-from-ico=./src/res/speedsouls.ico --windows-disable-console

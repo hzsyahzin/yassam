@@ -1,4 +1,5 @@
 import os
+
 from pathlib import Path
 
 from PyQt6.QtGui import QIcon, QActionGroup, QAction, QKeySequence
@@ -36,6 +37,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.savefileActions = [
             self.actionLoad, self.actionReplace, self.actionImport]
+
+        self.actionLoad.setIcon(QIcon('icons:phosphor-icons/arrow-clockwise.svg'))
+        self.actionReplace.setIcon(QIcon('icons:phosphor-icons/arrows-clockwise.svg'))
+        self.actionImport.setIcon(QIcon('icons:phosphor-icons/download-simple.svg'))
+        self.actionCopy.setIcon(QIcon('icons:phosphor-icons/copy.svg'))
+        self.actionPaste.setIcon(QIcon('icons:phosphor-icons/clipboard.svg'))
+        self.actionRename.setIcon(QIcon('icons:phosphor-icons/note-pencil.svg'))
+        self.actionDelete.setIcon(QIcon('icons:phosphor-icons/trash.svg'))
+        self.actionNew_Folder.setIcon(QIcon('icons:phosphor-icons/folder.svg'))
+        self.actionSettings.setIcon(QIcon('icons:phosphor-icons/stack.svg'))
+        self.actionQuit.setIcon(QIcon('icons:phosphor-icons/sign-out.svg'))
 
         self.setupConnections()
         self.setHotkeys()
@@ -102,7 +114,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setActiveGame(int(gameAction.property("id")))
 
     def onProfileAdd(self) -> None:
-        if not FileController.createProfile(self.settingsController.getActiveGameID()):
+        if not FileController.createProfile(self.settingsController.getActiveGameID(), parent=self):
             self.statusbar.showMessage("Error creating profile")
         self.comboBoxProfile.populate(self.settingsController.getActiveSavefileDirectory())
 

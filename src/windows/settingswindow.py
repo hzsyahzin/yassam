@@ -32,6 +32,8 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
 
         self.setupConnections()
         self.setupHotkeys()
+
+        self.comboBoxGames.setCurrentText(self.settingsController.getActiveGameName())
         self.refresh()
 
     def refresh(self):
@@ -90,7 +92,7 @@ class SettingsWindow(QWidget, Ui_SettingsWindow):
         self.listView.edit(self.listView.currentIndex())
 
     def onProfileAdd(self) -> None:
-        if not FileController.createProfile(self.comboBoxGames.getSelectedGameID()):
+        if not FileController.createProfile(self.comboBoxGames.getSelectedGameID(), parent=self):
             QMessageBox.critical(self, "Error creating profile", "Profile was unable to be created.")
 
     def onProfileDelete(self) -> None:

@@ -11,8 +11,10 @@ from controllers.settingscontroller import SettingsController
 
 class FileController:
     @staticmethod
-    def createProfile(gameID: int) -> bool:
-        profileName, ok = QInputDialog().getText(QWidget(), "Create Profile", "Profile Name:")
+    def createProfile(gameID: int, parent=None) -> bool:
+        if not parent:
+            parent = QWidget()
+        profileName, ok = QInputDialog().getText(parent, "Create Profile", "Profile Name:")
         if profileName and ok:
             path, ok = FileController.createFolder(
                 SettingsController().getSavefileDirectory(gameID), profileName)
